@@ -17,7 +17,7 @@ public class SscccinComponentProvider extends BaseComponentProvider {
 
   @Override
   public Component getComponent(String componentId, Map<String, Object> parameters) {
-    throw new IllegalArgumentException("Component id " + componentId + " not supported.");
+    throw new IllegalArgumentException("Component id " + componentId + " not supported."); 
   }
 
   @Override
