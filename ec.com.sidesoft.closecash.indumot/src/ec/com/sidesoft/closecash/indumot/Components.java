@@ -12,4 +12,10 @@ public class Components {
         a = a + 1;
         return a * b;
     }
+
+    //Metodo
+	public int dividir(int a, int b) {
+        a = a + 1;
+        return a / b;
+    }
 }
