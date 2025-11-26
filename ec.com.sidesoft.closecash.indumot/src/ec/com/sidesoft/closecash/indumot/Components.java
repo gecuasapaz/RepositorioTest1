@@ -11,6 +11,8 @@ import org.openbravo.client.kernel.Component;
 import org.openbravo.client.kernel.ComponentProvider;
 
 public class Components {
+
+    //Metodo
 	public int multiplicar(int a, int b) {
         return a * b;
     }
