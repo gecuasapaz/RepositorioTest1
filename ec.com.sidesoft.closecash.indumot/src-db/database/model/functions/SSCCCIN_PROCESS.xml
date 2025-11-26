@@ -1,0 +1,918 @@
+<?xml version="1.0"?>
+  <database name="FUNCTION SSCCCIN_PROCESS">
+    <function name="SSCCCIN_PROCESS" type="NULL">
+      <parameter name="pinstance_id" type="VARCHAR" mode="in">
+        <default/>
+      </parameter>
+      <body><![CDATA[TYPE RECORD IS REF CURSOR;
+  Cur_Parameter RECORD;
+  Cur_ClousureLines RECORD;
+  Cur_AccountTransaction RECORD;
+  Cur_PaymentValidation RECORD;
+  Cur_ValidationPayments RECORD;
+  Cur_ValidationDepositAcctAccount RECORD;
+  vRecord RECORD;
+  vSetup RECORD;
+
+ v_User_ID VARCHAR2(32) ;
+ v_ResultStr VARCHAR2(2000) := '';
+ v_descripcion VARCHAR2(2000) := '';
+ v_Concept_ID VARCHAR2(32);
+ v_LoadLines VARCHAR2(60);
+ v_RecordId VARCHAR2(32);
+ v_OrganizationId VARCHAR2(32);
+ v_Contador NUMBER:=0; 
+ v_ContadorResp NUMBER:=0; 
+ v_TotalIncome NUMBER:=0; 
+ v_TotalExpenses NUMBER:=0; 
+ v_depositamt_res NUMBER:=0; 
+ v_Docstatus VARCHAR2(60); 
+ v_TotalAmount NUMBER:=0; 
+ v_order_id VARCHAR2(32);
+ v_processor_banck_id VARCHAR2(32);
+ v_cards_types_id VARCHAR2(32);
+ v_types_of_credit_id VARCHAR2(32);
+ v_fin_payment_id VARCHAR2(32);
+ v_bpartner_id VARCHAR2(32);
+ v_invoice_id VARCHAR2(32);
+ v_lot VARCHAR2(60);
+ v_FinancialAccount VARCHAR2(32);
+ v_FinancialAccount_orgn VARCHAR2(32);
+ v_ClosingDate DATE;
+ v_Process_Date DATE;
+ v_expiration_date DATE;
+ v_PaymentMethodID VARCHAR2(32);
+ v_banktransfer_id VARCHAR2(32);
+ v_ConceptID VARCHAR2(32);
+ v_NameSetup VARCHAR2(60);
+ v_CostCenterID VARCHAR2(32);
+ v_AdClientID VARCHAR2(32);
+ v_Process VARCHAR2(60);
+ v_PeriodStatus VARCHAR2(60);
+ v_Module NUMBER:=0;
+ v_TotalIncome2 NUMBER:=0;
+ v_TotalExpenses2 NUMBER:=0;
+ v_ResultFunction VARCHAR2(5000);
+ v_typeacct  VARCHAR2(10);
+ v_paymentamt  NUMBER;
+ v_depositamt NUMBER; 
+ v_status	VARCHAR2(10);
+ v_doctypesales VARCHAR2(32);
+ v_reconciled VARCHAR2(60);
+ v_doctypecreditnote VARCHAR2(32);
+ v_validation VARCHAR2(60):='N';
+ v_total NUMBER:=0; 
+ v_setup_id VARCHAR2(32);
+ v_preference VARCHAR2(60); 
+ v_finalsetup_id VARCHAR2(32);
+ v_processing VARCHAR2(32);
+ v_processed VARCHAR2(32);
+ 
+ vCheck NUMBER;
+ vDescription VARCHAR2 := '';
+ vPaymentIn NUMBER;
+ vIncomeExpenses NUMBER;
+ vDifference NUMBER;
+ vReferenceNo VARCHAR2(2000) := '';
+ vNewLine VARCHAR2 := '';
+ v_SCheck NUMBER;	
+BEGIN
+
+  --  Update AD_PInstance
+  DBMS_OUTPUT.PUT_LINE('Updating PInstance - Processing ' || PInstance_ID) ;
+  v_ResultStr := 'PInstanceNotFound';
+  AD_UPDATE_PINSTANCE(PInstance_ID, NULL, 'Y', NULL, NULL) ;
+
+  BEGIN --BODY
+ 
+-- GET:    
+    FOR Cur_Parameter IN
+      (SELECT i.Record_ID, i.AD_User_ID,
+        p.ParameterName,
+        p.P_String,
+        p.P_Number,
+        p.P_Date,
+        p.AD_Client_ID,
+        p.AD_Org_ID,
+        p.CreatedBy        
+      FROM AD_PInstance i
+      LEFT JOIN AD_PInstance_Para p
+           ON i.AD_PInstance_ID = p.AD_PInstance_ID
+      WHERE i.AD_PInstance_ID = pinstance_id
+      ORDER BY p.SeqNo
+      )
+    LOOP
+		v_RecordId := Cur_Parameter.Record_ID;
+		v_User_ID := Cur_Parameter.AD_User_ID;
+    END LOOP;  
+	SELECT Count(*) INTO v_SCheck FROM sccc_cash_clousure WHERE sccc_cash_clousure_id = v_RecordId AND em_sscccin_procesing = 'Y';
+	
+	IF v_SCheck = 1 THEN
+		UPDATE sccc_cash_clousure SET em_sscccin_procesing = 'N' WHERE sccc_cash_clousure_id = v_RecordId;
+	END IF;
+    SELECT em_sscccin_procesing, em_sscccin_processed INTO v_processing, v_processed FROM sccc_cash_clousure WHERE sccc_cash_clousure_id=v_RecordId;
+    
+    IF v_processing = 'N' THEN
+    IF v_processed = 'N' THEN
+    update sccc_cash_clousure set em_sscccin_procesing = 'Y' where sccc_cash_clousure_id = v_RecordId;
+    
+	SELECT  process,docstatus,ad_org_id,closingdate,ad_client_id, sccc_setup_id, ROUND(COALESCE(ABS(difference),0),2), process_date
+	INTO v_Process,v_Docstatus,v_OrganizationId,v_ClosingDate,v_AdClientID, v_setup_id, vDifference, v_Process_Date
+	FROM sccc_cash_clousure where sccc_cash_clousure_id= v_RecordId;
+
+	--SE COMPRUEBA SI EL PERÍODO ESTÁ CERRADO
+	SELECT openclose INTO v_PeriodStatus FROM c_period WHERE v_Process_Date>=startdate AND v_Process_Date <= enddate ;
+	IF NOT FOUND THEN
+    v_PeriodStatus := 'O';
+	END IF;
+	IF (v_PeriodStatus='O')THEN
+	 AD_UPDATE_PINSTANCE(PInstance_ID, NULL, 'N', 0, '@PeriodNotAvailable@') ;
+		RETURN;
+	END IF;
+
+	-- Validación para pagos detallados
+	For Cur_ValidationPayments in (
+		Select SUM(COALESCE(spd.amount,0)) as "amount_detail"
+			, COALESCE(ccl.amount,0) as "amount_total"
+			, pm.name as "metodo_pago"
+		From sccc_cash_clousureline ccl
+			join fin_paymentmethod pm on pm.fin_paymentmethod_id = ccl.fin_paymentmethod_id
+			Join sscrcc_payment_detailed spd on spd.sccc_cash_clousureline_id = ccl.sccc_cash_clousureline_id
+		Where ccl.sccc_cash_clousure_id = v_RecordId
+			And EXISTS (
+				Select 1 
+				From sccc_cash_clousure sx 
+					Join sccc_setup st on st.ad_org_id  = sx.ad_org_id  
+					Join sccc_payment_method spm on spm.sccc_setup_id = st.sccc_setup_id 
+						And pm.fin_paymentmethod_id = spm.fin_paymentmethod_id
+						And spm.em_sscrcc_detailed = 'Y'
+				Where sx.sccc_cash_clousure_id = ccl.sccc_cash_clousure_id
+			)
+		Group By ccl.fin_paymentmethod_id, pm.name,ccl.amount
+	)Loop
+		If(COALESCE(Cur_ValidationPayments.amount_detail,0) <> COALESCE(Cur_ValidationPayments.amount_total,0))Then
+			RAISE_APPLICATION_ERROR(-20000, 'El detalle metodo de pago '||Cur_ValidationPayments.metodo_pago||' tiene diferencia. ');
+		End If;
+	END LOOP; -- End Cur_AccountTransaction
+	-- Fin Validación para pagos detallados
+		-- Validación checks validar deposito y validar cuenta financiera de la ventana configuracion cierre de caja
+	For Cur_ValidationDepositAcctAccount in (
+		select 		
+			scc_ln.amount as "monto",
+			spm.em_sscccin_valdeposit as "check_deposito",
+			spm.em_sscccin_valfinacc as "check_cuenta",
+			spm.EM_Sscrcc_Detailed as "check_detallado",
+			scc_ln.order_number as "linea",
+			scc_ln.EM_Sscccin_Deposit as "n_deposito_solapa", 
+			scc_ln.EM_Scca_Financial_Account_ID as "cuenta_solapa",
+			count(spd.Sscrcc_Payment_Detailed_id) as "exist_registro",
+			fp.name as "metodo_cobro",
+			case when spd.Sscrcc_Payment_Detailed_id is not null then spd.EM_Sscccin_Deposit end as "validar_deposito_solapa3",
+			case when spd.Sscrcc_Payment_Detailed_id is not null then spd.fin_financial_account_id end as "validar_cuenta_financiera_solapa3"
+			from sccc_cash_clousure scc
+			left join sccc_setup ct on ct.sccc_setup_id=scc.sccc_setup_id
+			left join sccc_payment_method spm on spm.sccc_setup_id=ct.sccc_setup_id
+			left join sccc_cash_clousureline scc_ln on scc_ln.sccc_cash_clousure_id=scc.sccc_cash_clousure_id
+			left join Sscrcc_Payment_Detailed spd on spd.sccc_cash_clousureline_id=scc_ln.sccc_cash_clousureline_id
+			left join FIN_Paymentmethod fp on fp.FIN_Paymentmethod_ID=spm.FIN_Paymentmethod_ID
+			left join FIN_Paymentmethod fp2 on fp2.FIN_Paymentmethod_ID=scc_ln.FIN_Paymentmethod_ID
+			where scc.sccc_cash_clousure_id=v_RecordId and fp2.name =fp.name and scc_ln.amount<>0 
+			group by 
+			scc.name,ct.name,spm.em_sscccin_valdeposit,spm.em_sscccin_valfinacc,fp2.name,fp.name,scc_ln.EM_Sscccin_Deposit, 
+			scc_ln.EM_Scca_Financial_Account_ID, spd.EM_Sscccin_Deposit, spd.FIN_Financial_Account_ID ,spd.Sscrcc_Payment_Detailed_id 
+			,scc_ln.amount,scc_ln.order_number,spm.em_sscrcc_detailed
+	)Loop
+		
+		IF Cur_ValidationDepositAcctAccount.check_deposito='Y' then
+			IF Cur_ValidationDepositAcctAccount.check_detallado='N' THEN
+				If Cur_ValidationDepositAcctAccount.n_deposito_solapa is null Then
+					RAISE_APPLICATION_ERROR(-20000,'El método de cobro línea '|| Cur_ValidationDepositAcctAccount.linea ||' '||Cur_ValidationDepositAcctAccount.metodo_cobro||'  no tiene detallado un No. Deposito');
+				end if;
+			end if;
+			IF Cur_ValidationDepositAcctAccount.check_detallado='Y' THEN
+				IF Cur_ValidationDepositAcctAccount.n_deposito_solapa is null and Cur_ValidationDepositAcctAccount.validar_deposito_solapa3 is null THEN
+					RAISE_APPLICATION_ERROR(-20000,'El método de cobro línea '|| Cur_ValidationDepositAcctAccount.linea ||' '||Cur_ValidationDepositAcctAccount.metodo_cobro||'  no tiene detallado una No. Deposito');			
+				end if;
+			end if;
+		END IF;
+		
+		
+		
+		
+		IF Cur_ValidationDepositAcctAccount.check_cuenta='Y' then
+			IF Cur_ValidationDepositAcctAccount.check_detallado='N' THEN
+				If Cur_ValidationDepositAcctAccount.cuenta_solapa is null Then
+					RAISE_APPLICATION_ERROR(-20000,'El método de cobro línea '|| Cur_ValidationDepositAcctAccount.linea ||' '||Cur_ValidationDepositAcctAccount.metodo_cobro||'  no tiene detallado una Cuenta Financiera');
+				end if;
+			end if;
+			IF Cur_ValidationDepositAcctAccount.check_detallado='Y' THEN
+				IF Cur_ValidationDepositAcctAccount.cuenta_solapa is null and Cur_ValidationDepositAcctAccount.validar_cuenta_financiera_solapa3 is null THEN
+					RAISE_APPLICATION_ERROR(-20000,'El método de cobro línea '|| Cur_ValidationDepositAcctAccount.linea ||' '||Cur_ValidationDepositAcctAccount.metodo_cobro||'  no tiene detallado una cuenta financiera');			
+				end if;
+			end if;
+		END IF;
+	END LOOP; -- End Cur_ValidationDepositAcctAccount
+	-- Fin Validación checks validar deposito y validar cuenta financiera de la ventana configuracion cierre de caja
+	--SI ESTA EN ESTADO REGISTRADO         
+     	IF(v_Docstatus ='SCCC_RG') THEN
+        SELECT COALESCE(SUM(ccl.amount),0) INTO v_TotalIncome
+		FROM sccc_cash_clousureline AS ccl
+			JOIN sccc_payment_method AS pm ON pm.fin_paymentmethod_id=ccl.fin_paymentmethod_id
+		WHERE pm.em_sscccin_difference='N' AND ccl.sccc_cash_clousure_id=v_RecordId
+		    AND pm.sccc_setup_id=v_setup_id AND ccl.typeaccount='INC';
+		
+		-- Sumar egresos
+		SELECT COALESCE(SUM(ccl.amount),0) INTO v_TotalExpenses
+		FROM sccc_cash_clousureline AS ccl
+			JOIN sccc_payment_method AS pm ON pm.fin_paymentmethod_id=ccl.fin_paymentmethod_id
+		WHERE pm.em_sscccin_difference='N' AND ccl.sccc_cash_clousure_id=v_RecordId
+		    AND pm.sccc_setup_id=v_setup_id AND ccl.typeaccount='EXP';
+        
+		--COMPROBAR EXISTENCIA MÓDULO ec.com.sidesoft.custom.closecash.advanced
+		SELECT COALESCE((SELECT COUNT(*) AS CONTAR FROM AD_MODULE WHERE JAVAPACKAGE = 'ec.com.sidesoft.custom.closecash.advanced'),0)
+			INTO v_Module
+		FROM DUAL;
+	      
+		IF (v_Module>0) THEN
+			SELECT COALESCE(SUM(ccl.amount),0) INTO v_TotalIncome2
+    		FROM scca_cash_clousureline2 AS ccl
+    			JOIN sccc_payment_method AS pm ON pm.fin_paymentmethod_id=ccl.fin_paymentmethod_id
+    		WHERE pm.em_sscccin_difference='N' AND ccl.sccc_cash_clousure_id=v_RecordId
+    		    AND pm.sccc_setup_id=v_setup_id AND ccl.typeaccount='INC';
+    		
+    		-- Sumar egresos
+    		SELECT COALESCE(SUM(ccl.amount),0) INTO v_TotalExpenses2
+    		FROM scca_cash_clousureline2 AS ccl
+    			JOIN sccc_payment_method AS pm ON pm.fin_paymentmethod_id=ccl.fin_paymentmethod_id
+    		WHERE pm.em_sscccin_difference='N' AND ccl.sccc_cash_clousure_id=v_RecordId
+    		    AND pm.sccc_setup_id=v_setup_id AND ccl.typeaccount='EXP';
+		END IF;
+
+		v_TotalAmount:= COALESCE(v_TotalIncome,0)+COALESCE(v_TotalIncome2,0)-COALESCE(v_TotalExpenses,0)-COALESCE(v_TotalExpenses2,0);
+		
+		IF (v_TotalAmount=0) THEN
+		 AD_UPDATE_PINSTANCE(PInstance_ID, NULL, 'N', 0, '@SCCC_TOTAL_ZERO@') ;
+			RETURN;
+		END IF;
+		
+		IF(v_setup_id IS NULL) THEN
+		  AD_UPDATE_PINSTANCE(PInstance_ID, NULL, 'N', 0, '@Sccc_SetupNotSet@') ;
+			RETURN;			
+		END IF;
+		
+		--Validar que los tipos de documentos esten configurados
+		SELECT COUNT(*) into vCheck
+		FROM ssccso_type_of_document
+		WHERE sccc_setup_id=v_setup_id;
+		IF vCheck =0 THEN
+			RAISE_APPLICATION_ERROR(-20000,'@Sscccin_DocumentTypesUnconfigured@');
+		END IF;
+		
+		--Validar que los tipos de documentos para facturas esten configurados
+		SELECT COUNT(*) into vCheck
+		FROM sscccin_invoice_doctype
+		WHERE sccc_setup_id=v_setup_id;
+		IF vCheck =0 THEN
+			RAISE_APPLICATION_ERROR(-20000,'@Sscccin_DocumentTypesUnconfiguredForInvoices@');
+		END IF;
+		
+		--Obtenemos la configuracion del cierre de caja
+		SELECT * INTO vSetup
+		FROM sccc_setup
+		WHERE sccc_setup_id=v_setup_id;
+		
+		--Validamos la diferencia
+		IF vSetup.em_sscccin_maximumdifference IS NOT NULL THEN
+			IF vDifference > vSetup.em_sscccin_maximumdifference THEN
+				RAISE EXCEPTION '%', 'Existe una diferencia ('
+					||vDifference
+					||') mayor a la permitida.'; --OBTG:-20000--
+			ELSEIF vDifference < 0 THEN
+				RAISE EXCEPTION '%', 'Existe una diferencia ('
+					||vDifference
+					||') negativa.'; --OBTG:-20000--
+			END IF;
+		ELSE
+			RAISE_APPLICATION_ERROR(-20000,'Maxima diferencia no configurada');
+		END IF;
+		
+		--Actualizamos la descripcion del detalle de pago
+		UPDATE sscrcc_payment_detailed AS pd SET description=substring(ccl.description,1,250)
+		FROM sccc_cash_clousureline AS ccl
+		WHERE ccl.sccc_cash_clousureline_id=pd.sccc_cash_clousureline_id AND ccl.sccc_cash_clousure_id=v_RecordId;
+		
+		--Actualizamos la referencia en los cobros de tipo cheque y efectivo
+		FOR vRecord IN (
+			SELECT ccl.*, pm.em_scca_type_payment
+			FROM sccc_cash_clousureline AS ccl
+				JOIN fin_paymentmethod AS pm ON pm.fin_paymentmethod_id=ccl.fin_paymentmethod_id
+			WHERE ccl.sccc_cash_clousure_id=v_RecordId
+				AND pm.em_scca_type_payment IN ('CH','SH')
+		) LOOP
+			SELECT COUNT(sscrcc_payment_detailed_id) INTO vCheck
+			FROM sscrcc_payment_detailed
+			WHERE sccc_cash_clousureline_id=vRecord.sccc_cash_clousureline_id;
+			
+			IF vCheck = 0 THEN
+				vReferenceNo := vRecord.EM_Sscccin_Deposit;
+			ELSEIF vCheck = 1 THEN
+				SELECT EM_Sscccin_Deposit INTO vReferenceNo
+				FROM sscrcc_payment_detailed
+				WHERE sccc_cash_clousureline_id=vRecord.sccc_cash_clousureline_id;
+			ELSE
+				vReferenceNo := NULL;
+			END IF;
+			
+			UPDATE fin_payment AS p SET referenceno=vReferenceNo
+			FROM fin_paymentmethod AS pm
+				JOIN sccc_cash_clousureline AS ccl ON ccl.fin_paymentmethod_id=pm.fin_paymentmethod_id
+				JOIN sccc_cash_clousure AS cc ON cc.sccc_cash_clousure_id=ccl.sccc_cash_clousure_id
+				LEFT JOIN sscrcc_payment_detailed AS pd ON pd.sccc_cash_clousureline_id=ccl.sccc_cash_clousureline_id
+			WHERE pm.fin_paymentmethod_id=p.fin_paymentmethod_id
+				AND pm.em_scca_type_payment=vRecord.em_scca_type_payment
+				AND p.status='RDNC'
+				AND p.paymentdate::DATE=cc.closingdate::DATE
+				AND cc.sccc_cash_clousure_id=v_RecordId
+				AND p.c_doctype_id IN (
+					SELECT c_doctype_id
+					FROM ssccso_type_of_document
+					WHERE sccc_setup_id=v_setup_id
+				);
+		END LOOP;
+		vReferenceNo := '';
+		--RAISE vReferenceNo;
+		
+		SELECT COALESCE(SUM(b.amount),0) INTO vPaymentIn FROM (
+			SELECT DISTINCT a.* FROM (
+				--Obtenemos las facturas
+				SELECT p.fin_payment_id, COALESCE(p.amount,0) AS amount
+				FROM fin_payment AS p
+					JOIN fin_payment_detail AS pd ON pd.fin_payment_id=p.fin_payment_id
+					JOIN fin_payment_scheduledetail AS psd ON psd.fin_payment_detail_id=pd.fin_payment_detail_id
+					JOIN fin_payment_schedule AS ps ON ps.fin_payment_schedule_id=psd.fin_payment_schedule_invoice
+					JOIN c_invoice AS i ON i.c_invoice_id=ps.c_invoice_id
+				WHERE p.status!='RPVOID' AND i.docstatus='CO' AND i.issotrx='Y'
+					AND p.paymentdate::DATE=v_ClosingDate::DATE
+					AND i.dateinvoiced::DATE=v_ClosingDate::DATE
+					AND i.c_doctype_id IN (
+						SELECT c_doctype_sales_id
+						FROM sscccin_invoice_doctype
+						WHERE sccc_setup_id=v_setup_id
+					)
+					AND p.amount>0
+				UNION
+				--Cobros de facturas de dias pasados
+				SELECT p.fin_payment_id, COALESCE(p.amount,0) AS amount
+				FROM fin_payment AS p
+					LEFT JOIN fin_payment_detail AS pd ON pd.fin_payment_id=p.fin_payment_id
+					LEFT JOIN fin_payment_scheduledetail AS psd ON psd.fin_payment_detail_id=pd.fin_payment_detail_id
+					LEFT JOIN fin_payment_schedule AS ps ON ps.fin_payment_schedule_id=psd.fin_payment_schedule_invoice
+					LEFT JOIN c_invoice AS i ON i.c_invoice_id=ps.c_invoice_id
+				WHERE p.status!='RPVOID'
+					AND p.paymentdate::DATE=v_ClosingDate::DATE
+					AND i.dateinvoiced::DATE<v_ClosingDate::DATE
+					AND p.c_doctype_id IN (
+						SELECT c_doctype_id
+						FROM ssccso_type_of_document
+						WHERE sccc_setup_id=v_setup_id
+					)
+					AND p.amount>0
+				UNION
+				--Cobros no relacionados a facturas
+				SELECT p.fin_payment_id, COALESCE(p.amount,0) AS amount
+				FROM fin_payment AS p
+					JOIN fin_payment_detail AS pd ON pd.fin_payment_id=p.fin_payment_id
+					JOIN fin_payment_scheduledetail AS psd ON psd.fin_payment_detail_id=pd.fin_payment_detail_id
+				WHERE p.status!='RPVOID'
+					AND p.paymentdate::DATE=v_ClosingDate::DATE
+					AND psd.fin_payment_schedule_invoice IS NULL
+					AND p.c_doctype_id IN (
+						SELECT c_doctype_id
+						FROM ssccso_type_of_document
+						WHERE sccc_setup_id=v_setup_id
+					)
+					AND p.amount>0
+				UNION
+				--Obtenemos las notas de credito
+				SELECT p.fin_payment_id, COALESCE(p.amount,0) AS amount
+				FROM fin_payment AS p
+					LEFT JOIN fin_payment_detail AS pd ON pd.fin_payment_id=p.fin_payment_id
+					LEFT JOIN fin_payment_scheduledetail AS psd ON psd.fin_payment_detail_id=pd.fin_payment_detail_id
+					LEFT JOIN fin_payment_schedule AS ps ON ps.fin_payment_schedule_id=psd.fin_payment_schedule_invoice
+					LEFT JOIN c_invoice AS i ON i.c_invoice_id=ps.c_invoice_id
+				WHERE i.docstatus='CO' AND i.issotrx='Y'
+					AND i.dateinvoiced::DATE=v_ClosingDate::DATE
+					AND i.c_doctype_id IN (
+						SELECT c_doctype_credit_notes_id
+						FROM sscccin_invoice_doctype
+						WHERE sccc_setup_id=v_setup_id
+					)
+			) AS a
+		) AS b;
+		
+		--Consultar en ventana de ingresos y egresos de caja
+		SELECT COALESCE(SUM(
+			CASE
+				WHEN type_of_operation = 'BPD' THEN deposit_amount --Cobro 
+				WHEN type_of_operation = 'BPW' THEN refund_amount*-1 --Pago
+				ELSE 0
+			END
+		),0) INTO vIncomeExpenses
+		FROM ssccso_cash_inc_exp
+		WHERE status='PR' AND isreconciled='Y'
+			AND dateactual::DATE=v_ClosingDate::DATE
+			AND c_doctype_id IN (
+				SELECT c_doctype_id
+				FROM ssccso_type_of_document
+				WHERE sccc_setup_id=v_setup_id
+			);
+        
+		v_total := vPaymentIn + vIncomeExpenses;
+		
+		UPDATE sccc_cash_clousure SET totalincome=v_TotalIncome+v_TotalIncome2,
+			totalexpenses=v_TotalExpenses+v_TotalExpenses2,
+			totalsales=COALESCE(v_total,0)
+		WHERE sccc_cash_clousure_ID= v_RecordId;
+		
+		--Agregamos el lote a la descripcion del cobro
+		UPDATE fin_payment AS p SET description=COALESCE(p.description,'')||vNewLine||'Lote N° '||ccl.em_scca_lot
+		FROM fin_finacc_transaction AS fat
+			JOIN sccc_cash_clousureline AS ccl ON ccl.sccc_cash_clousure_id=v_RecordId
+			JOIN fin_paymentmethod AS pm ON pm.fin_paymentmethod_id=ccl.fin_paymentmethod_id
+		WHERE ccl.fin_paymentmethod_id=p.fin_paymentmethod_id
+			AND TRIM(COALESCE(ccl.em_scca_lot,''))!=''
+			AND p.fin_payment_id=fat.fin_payment_id
+			AND fat.em_sccc_iscashclousure!='Y'
+			AND fat.em_sccc_cash_clousure_id IS NULL
+			AND fat.statementdate::DATE=v_ClosingDate::DATE
+			AND pm.em_scca_type_payment='CA' -- Tarjeta
+			AND p.c_doctype_id IN (
+				SELECT c_doctype_id
+				FROM ssccso_type_of_document AS td
+					JOIN sccc_setup AS s ON s.sccc_setup_id=td.sccc_setup_id
+					JOIN sccc_cash_clousure AS cc ON cc.sccc_setup_id=s.sccc_setup_id
+				WHERE cc.sccc_cash_clousure_id=v_RecordId
+			);
+
+		SELECT sccc_setup_id
+			INTO v_finalsetup_id
+		FROM sccc_setup 
+		--WHERE (ad_org_id= v_OrganizationId AND v_preference='N') OR (sccc_setup_id = v_setup_id AND v_preference='Y');
+		WHERE ad_org_id=v_OrganizationId AND sccc_setup_id=v_setup_id;
+
+	    --CONTROL EXISTENCIA DE MÉTODO DE PAGO EN CONFIGURACIÓN
+	    FOR Cur_ClousureLines IN(
+			SELECT  b.EM_Scca_Type_Payment,a.* 
+			FROM sccc_cash_clousureline a
+				join fin_paymentmethod b on b.fin_paymentmethod_id=a.fin_paymentmethod_id 
+			WHERE a.sccc_cash_clousure_id =v_RecordId AND b.em_scca_type_payment IN ('SH','CH')
+			ORDER BY a.order_number
+		)LOOP
+			IF Cur_ClousureLines.amount <> 0 THEN
+				v_FinancialAccount_orgn:=null;
+				IF(Cur_ClousureLines.EM_Scca_Financial_Account_ID IS NOT NULL AND (Cur_ClousureLines.EM_Scca_Type_Payment='CH' OR Cur_ClousureLines.EM_Scca_Type_Payment='SH'))THEN
+					v_FinancialAccount_orgn:=Cur_ClousureLines.EM_Scca_Financial_Account_ID;
+				ELSE 
+					SELECT pm.fin_financial_account_id into v_FinancialAccount_orgn FROM sccc_payment_method pm
+						INNER JOIN sccc_setup ss ON ss.sccc_setup_id = pm.sccc_setup_id
+					WHERE pm.fin_paymentmethod_id = Cur_ClousureLines.fin_paymentmethod_id 
+						AND pm.typeaccount =Cur_ClousureLines.typeaccount
+						AND ss.sccc_setup_id = v_finalsetup_id;
+				END IF;
+				
+				IF (v_FinancialAccount_orgn IS NULL) THEN
+				 AD_UPDATE_PINSTANCE(PInstance_ID, NULL, 'N', 0, '@SCCC_PYMNMETHOD_NOTFOUND@') ;
+					RETURN;
+				END IF;
+			END IF; -- End amount <> 0
+		END LOOP; -- End Cur_ClousureLines
+		v_ResultFunction:=NULL;
+		IF (v_Module>0) THEN
+			EXECUTE IMMEDIATE 'SELECT scca_processlines2('''||v_RecordId||''',NULL,NULL,NULL,NULL,NULL,NULL,NULL,''Y'') FROM dual' INTO v_ResultFunction;
+		END IF;
+
+		IF(trim(v_ResultFunction)='') THEN
+			v_ResultFunction:=NULL;
+		END IF;
+
+		IF (v_ResultFunction IS NOT NULL) THEN
+		 AD_UPDATE_PINSTANCE(PInstance_ID, NULL, 'N', 0, v_ResultFunction) ;
+			RETURN;
+		END IF;     
+
+		SELECT FIN_Financial_Account_id,c_glitem_id,name,c_costcenter_id
+			INTO v_FinancialAccount_orgn,v_ConceptID,v_NameSetup,v_CostCenterID
+		FROM sccc_setup 
+		--WHERE (ad_org_id= v_OrganizationId AND v_preference='N') OR (sccc_setup_id = v_setup_id AND v_preference='Y');
+		WHERE ad_org_id=v_OrganizationId AND sccc_setup_id=v_setup_id;
+    
+		SELECT openclose INTO v_PeriodStatus FROM c_period WHERE v_Process_Date>=startdate AND v_Process_Date <= enddate ;
+		IF NOT FOUND THEN
+	    v_PeriodStatus := 'O';
+		END IF;
+		IF (v_PeriodStatus='O')THEN
+			RAISE_APPLICATION_ERROR(-20000, '@PeriodNotAvailable@');
+		END IF;
+
+    FOR Cur_ClousureLines IN (
+		SELECT  b.EM_Scca_Type_Payment,a.* 
+		FROM sccc_cash_clousureline a
+			left join fin_paymentmethod b on b.fin_paymentmethod_id=a.fin_paymentmethod_id 
+		WHERE a.sccc_cash_clousure_id =v_RecordId AND b.em_scca_type_payment IN ('SH','CH')
+		ORDER BY a.order_number
+	)LOOP
+		v_ContadorResp:=0;
+	    IF Cur_ClousureLines.amount <> 0 THEN
+		v_ContadorResp:=Cur_ClousureLines.amount;
+		v_validation:='N';
+	    
+
+		v_FinancialAccount:=null;
+		IF(Cur_ClousureLines.EM_Scca_Financial_Account_ID IS NOT NULL AND (Cur_ClousureLines.EM_Scca_Type_Payment='CH' OR Cur_ClousureLines.EM_Scca_Type_Payment='SH'))THEN
+			v_FinancialAccount:=Cur_ClousureLines.EM_Scca_Financial_Account_ID;
+		ELSE 
+			SELECT pm.fin_financial_account_id into v_FinancialAccount FROM sccc_payment_method pm
+			INNER JOIN sccc_setup ss ON ss.sccc_setup_id = pm.sccc_setup_id
+			WHERE pm.fin_paymentmethod_id = Cur_ClousureLines.fin_paymentmethod_id 
+				AND pm.typeaccount =Cur_ClousureLines.typeaccount
+				AND ss.sccc_setup_id = v_finalsetup_id;
+		END IF;
+		If(Cur_ClousureLines.EM_Scca_Type_Payment ='CA')Then -- Tarjeta
+			For Cur_AccountTransaction in (
+				Select ft.depositamt
+					, ft.fin_payment_id
+					, ft.c_bpartner_id
+					, ft.description
+					, ft.em_ssccr_c_order_id
+					, ft.em_ssccr_c_invoice_id
+					, ft.em_ssccr_ssfi_banktransfer_id
+					, ft.em_ssccr_processor_banck_id
+					, ft.em_ssccr_types_of_credit_id
+					, ft.em_ssccr_cards_types_id
+					, ft.fin_finacc_transaction_id
+					, ft.em_ssccr_expiration_date
+					, ft.em_ssccr_lot
+					, fp.referenceno
+				From fin_finacc_transaction ft
+					join fin_payment fp on fp.fin_payment_id=ft.fin_payment_id 
+				where fp.fin_paymentmethod_id=Cur_ClousureLines.fin_paymentmethod_id
+				And ft.statementdate::DATE=v_ClosingDate::DATE
+				And ft.em_sccc_iscashclousure!='Y'
+				And ft.em_sccc_cash_clousure_id is null
+				AND fp.c_doctype_id IN (
+					SELECT c_doctype_id
+					FROM ssccso_type_of_document AS td
+						JOIN sccc_setup AS s ON s.sccc_setup_id=td.sccc_setup_id
+						JOIN sccc_cash_clousure AS cc ON cc.sccc_setup_id=s.sccc_setup_id
+					WHERE cc.sccc_cash_clousure_id=v_RecordId
+				)
+			)Loop
+				v_fin_payment_id	:= Cur_AccountTransaction.fin_payment_id;
+				v_bpartner_id		:= Cur_AccountTransaction.c_bpartner_id;
+				v_descripcion		:= v_NameSetup||'
+'||Cur_AccountTransaction.description;
+				v_order_id		:= Cur_AccountTransaction.em_ssccr_c_order_id;
+				v_invoice_id		:= Cur_AccountTransaction.em_ssccr_c_invoice_id;
+				v_banktransfer_id	:= Cur_AccountTransaction.em_ssccr_ssfi_banktransfer_id;
+				v_processor_banck_id	:= Cur_AccountTransaction.em_ssccr_processor_banck_id;
+				v_types_of_credit_id	:= Cur_AccountTransaction.em_ssccr_types_of_credit_id;
+				v_cards_types_id	:= Cur_AccountTransaction.em_ssccr_cards_types_id;
+				v_expiration_date	:= Cur_AccountTransaction.em_ssccr_expiration_date;
+				v_lot			:= Cur_AccountTransaction.em_ssccr_lot;
+				
+				vDescription := Cur_ClousureLines.description;
+				vReferenceNo := Cur_ClousureLines.em_sscccin_deposit;
+				
+				If(v_ContadorResp > 0 )Then
+					If(v_ContadorResp<Cur_AccountTransaction.depositamt)Then 
+						v_depositamt_res :=v_ContadorResp;
+					Else
+						v_depositamt_res:=Cur_AccountTransaction.depositamt;
+					End IF;
+					--INSERCIÓN EN LÍNEAS DE CUENTA FINANCIERA 
+					If(Cur_ClousureLines.em_scca_type_payment = 'CA')Then -- Tarjeta
+						v_reconciled:='N';
+					End IF;
+					--RDNC
+					INSERT INTO fin_finacc_transaction   
+					(
+						    fin_finacc_transaction_id		, ad_client_id			, ad_org_id			, created			, createdby
+						  , updated				, updatedby			, isactive			, c_currency_id			, fin_financial_account_id	
+						  , line			
+						  , dateacct				, c_glitem_id			, status			, paymentamt			, depositamt
+						  , processed				, processing			, posted			, trxtype			, statementdate		
+						  , description				, c_costcenter_id		, em_sccc_iscashclousure	, EM_Aprm_Processed		, em_sccc_cash_clousure_id
+						  , em_ssccr_fin_payment_id		
+						  , c_bpartner_id			, em_ssccr_c_order_id		, em_ssccr_c_invoice_id		, em_ssccr_lot			
+						  , em_ssccr_ssfi_banktransfer_id	, em_ssccr_processor_banck_id	, em_ssccr_types_of_credit_id	, em_ssccr_cards_types_id	, em_ssccr_expiration_date
+						  , em_ssccr_recapno
+						  , em_sscccin_reference
+					) VALUES (
+						  get_uuid()				, v_AdClientID			, v_OrganizationId		, now()		, v_User_ID
+						  , now()			, v_User_ID			, 'Y'				, '100'				, v_FinancialAccount_orgn
+						  , (SELECT COALESCE(MAX(line),0)+10 FROM  fin_finacc_transaction WHERE fin_finacc_transaction_ID = v_FinancialAccount_orgn)
+						  ,  v_Process_Date			, v_ConceptID			, 'PWNC'			, v_depositamt_res		, 0	
+						  , 'Y'					, 'N'				, 'N'				, 'BPW'				, v_Process_Date
+						  , substring(vDescription,1,3900)			, v_CostCenterID		, 'Y'				, 'R'				, v_RecordId
+						 , v_fin_payment_id		
+						 , v_bpartner_id			, v_order_id			, v_invoice_id			, Cur_ClousureLines.em_scca_lot 			
+						 , v_banktransfer_id			, v_processor_banck_id		, v_types_of_credit_id		, v_cards_types_id		, v_expiration_date
+						 , Cur_AccountTransaction.referenceno
+						 , vReferenceNo
+					);
+					update fin_financial_account set
+						  currentbalance =  currentbalance + (0 - v_depositamt_res)
+					Where  fin_financial_account_id = v_FinancialAccount_orgn;
+
+					-- Insertar cobro detallado si hay el caso
+					For Cur_PaymentValidation in (
+						Select *
+						From Sscrcc_Payment_Detailed
+						Where Sccc_Cash_Clousureline_ID = Cur_ClousureLines.Sccc_Cash_Clousureline_ID
+					)LOOP
+						v_validation := 'Y';
+						v_typeacct := NULL;
+						IF (Cur_ClousureLines.Typeaccount= 'INC') THEN
+							v_typeacct:= 'BPD';
+							v_paymentamt:= 0;
+							v_depositamt:= Cur_PaymentValidation.amount;
+							v_status:='RPR';
+						ELSE
+							v_typeacct:= 'BPW';
+							v_paymentamt:= Cur_PaymentValidation.amount;
+							v_depositamt:= 0;
+							v_status:= 'PPM';
+						END IF;
+						
+						v_FinancialAccount := FIN_Financial_Account_ID;
+						If(Cur_ClousureLines.em_scca_type_payment = 'CA')Then -- Tarjeta
+							v_reconciled:='N';
+						End IF;
+						
+						vDescription := Cur_PaymentValidation.description;
+						vReferenceNo := Cur_PaymentValidation.em_sscccin_deposit;
+						
+						INSERT INTO fin_finacc_transaction (
+							fin_finacc_transaction_id	, ad_client_id			, ad_org_id			, created			
+							, createdby			, updated			, updatedby			, isactive			
+							, c_currency_id			, fin_financial_account_id	, line			
+							, dateacct			, c_glitem_id			, status			, paymentamt			
+							, depositamt			, processed			, processing	 		, posted			
+							, trxtype			, statementdate			, description			, c_costcenter_id		
+							, em_sccc_iscashclousure	, EM_Aprm_Processed		, em_sccc_cash_clousure_id	, em_ssccr_lot			
+							, em_ssccr_reconciled		, em_ssccr_ssfi_banktransfer_id	, em_ssccr_processor_banck_id	, em_ssccr_types_of_credit_id	
+							, em_ssccr_cards_types_id	, em_ssccr_fin_payment_id		
+							, c_bpartner_id			, em_ssccr_c_order_id		, em_ssccr_c_invoice_id		, em_ssccr_expiration_date
+							, em_ssccr_recapno
+							, em_sscccin_reference
+						) VALUES (
+							get_uuid()			, v_AdClientID			, v_OrganizationId		, now()	
+							, v_User_ID			, now()		, v_User_ID			, 'Y'				
+							, '100'				, v_FinancialAccount		, (SELECT COALESCE(MAX(line),0)+10 FROM  fin_finacc_transaction WHERE fin_finacc_transaction_ID = v_FinancialAccount )
+							, v_Process_Date			, v_ConceptID			, 'RDNC'			, v_paymentamt
+							, v_depositamt			, 'Y'				, 'N'				, 'N'
+							, v_typeacct			, v_Process_Date			, substring(vDescription,1,3900)			, v_CostCenterID
+							, 'Y'				, 'R'				, v_RecordId			, v_lot
+							, v_reconciled			, v_banktransfer_id		, v_processor_banck_id		, v_types_of_credit_id
+							, v_cards_types_id		, v_fin_payment_id		
+							, v_bpartner_id			, v_order_id			, v_invoice_id			, v_expiration_date
+							, Cur_AccountTransaction.referenceno
+							, vReferenceNo);
+						update fin_financial_account set
+							currentbalance =  currentbalance + (v_depositamt - v_paymentamt)
+						Where  fin_financial_account_id = v_FinancialAccount;
+					End Loop; -- END Cur_PaymentValidation
+
+					If (v_validation = 'N')Then--Normal
+						
+						v_typeacct := NULL;
+						IF (Cur_ClousureLines.Typeaccount= 'INC') THEN
+							v_typeacct:= 'BPD';
+							v_paymentamt:= 0;
+							v_depositamt:= v_depositamt_res;
+							v_status:='RPR';
+						ELSE
+							v_typeacct:= 'BPW';
+							v_paymentamt:= v_depositamt_res;
+							v_depositamt:= 0;
+							v_status:= 'PPM';
+						END IF;
+						
+						If(Cur_ClousureLines.em_scca_type_payment = 'CA')Then -- Tarjeta
+							v_reconciled:='N';
+						End IF;
+						INSERT INTO fin_finacc_transaction (
+							fin_finacc_transaction_id	, ad_client_id			, ad_org_id			, created			
+							, createdby			, updated			, updatedby			, isactive			
+							, c_currency_id			, fin_financial_account_id	, line			
+							, dateacct			, c_glitem_id			, status			, paymentamt			
+							, depositamt			, processed			, processing	 		, posted			
+							, trxtype			, statementdate			, description			, c_costcenter_id		
+							, em_sccc_iscashclousure	, EM_Aprm_Processed		, em_sccc_cash_clousure_id	, em_ssccr_lot			
+							, em_ssccr_reconciled		, em_ssccr_ssfi_banktransfer_id	, em_ssccr_processor_banck_id	, em_ssccr_types_of_credit_id	
+							, em_ssccr_cards_types_id	, em_ssccr_fin_payment_id 
+							, c_bpartner_id			, em_ssccr_c_order_id		, em_ssccr_c_invoice_id		, em_ssccr_expiration_date
+							, em_ssccr_recapno
+							, em_sscccin_reference
+						) VALUES (
+							get_uuid()			, v_AdClientID			, v_OrganizationId		, now()	
+							, v_User_ID			, now()		, v_User_ID			, 'Y'				
+							, '100'				, v_FinancialAccount		, (SELECT COALESCE(MAX(line),0)+10 FROM  fin_finacc_transaction WHERE fin_finacc_transaction_ID = v_FinancialAccount )
+							, v_Process_Date			, v_ConceptID			, 'RDNC'			, v_paymentamt
+							, v_depositamt			, 'Y'				, 'N'				, 'N'
+							, v_typeacct			, v_Process_Date			, substring(vDescription,1,3900)			, v_CostCenterID
+							, 'Y'				, 'R'				, v_RecordId			, v_lot
+							, v_reconciled			, v_banktransfer_id		, v_processor_banck_id		, v_types_of_credit_id
+							, v_cards_types_id		, v_fin_payment_id		
+							, v_bpartner_id			, v_order_id			, v_invoice_id			, v_expiration_date
+							, Cur_AccountTransaction.referenceno
+							, vReferenceNo);
+						update fin_financial_account set
+							currentbalance =  currentbalance + (v_depositamt - v_paymentamt)
+						Where  fin_financial_account_id = v_FinancialAccount;
+					End If; -- END (v_validation = 'N')
+					
+					v_ContadorResp:=v_ContadorResp - Cur_AccountTransaction.depositamt;
+				End IF;
+				update fin_finacc_transaction set em_sccc_cash_clousure_id = v_RecordId  where fin_finacc_transaction_id = Cur_AccountTransaction.fin_finacc_transaction_id;
+			End Loop;
+		ELSE -- FIN CA
+      vDescription := Cur_ClousureLines.description;
+	  vReferenceNo := Cur_ClousureLines.em_sscccin_deposit;
+			INSERT INTO fin_finacc_transaction
+			(
+				    fin_finacc_transaction_id		, ad_client_id			, ad_org_id			, created			, createdby
+				  , updated				, updatedby			, isactive			, c_currency_id			, fin_financial_account_id	
+				  , line			
+				  , dateacct				, c_glitem_id			, status			, paymentamt			, depositamt
+				  , processed				, processing			, posted			, trxtype			, statementdate		
+				  , description				, c_costcenter_id		, em_sccc_iscashclousure	, EM_Aprm_Processed		, em_sccc_cash_clousure_id
+				  , em_sscccin_reference
+			) VALUES (
+				  get_uuid()				, v_AdClientID			, v_OrganizationId		, now()		, v_User_ID
+				  , now()			, v_User_ID			, 'Y'				, '100'				, v_FinancialAccount_orgn
+				  , (SELECT COALESCE(MAX(line),0)+10 FROM  fin_finacc_transaction WHERE fin_finacc_transaction_ID = v_FinancialAccount_orgn)
+				  ,  v_Process_Date			, v_ConceptID			, 'PWNC'			, Cur_ClousureLines.amount	, 0	
+				  , 'Y'					, 'N'				, 'N'				, 'BPW'				, v_Process_Date
+				  , substring(vDescription,1,3900)			, v_CostCenterID		, 'Y'				, 'R'				, v_RecordId
+				  , vReferenceNo
+			);
+			update fin_financial_account set
+				  currentbalance =  currentbalance + (0 - Cur_ClousureLines.amount)
+			Where  fin_financial_account_id = v_FinancialAccount_orgn;
+			
+			v_FinancialAccount:=null;
+			IF(Cur_ClousureLines.EM_Scca_Financial_Account_ID IS NOT NULL AND (Cur_ClousureLines.EM_Scca_Type_Payment='CH' OR Cur_ClousureLines.EM_Scca_Type_Payment='SH'))THEN
+				v_FinancialAccount:=Cur_ClousureLines.EM_Scca_Financial_Account_ID;
+			ELSE 
+				SELECT pm.fin_financial_account_id 
+					Into v_FinancialAccount 
+				FROM sccc_payment_method pm
+					Inner Join sccc_setup ss ON ss.sccc_setup_id = pm.sccc_setup_id
+				WHERE pm.fin_paymentmethod_id = Cur_ClousureLines.fin_paymentmethod_id 
+					AND pm.typeaccount =Cur_ClousureLines.typeaccount
+					AND ss.sccc_setup_id = v_finalsetup_id;
+			END IF;
+
+			--Insertar en la cuenta financiera de manera detallada.(Si existen lineas)
+			For Cur_PaymentValidation in (
+				Select *
+				From Sscrcc_Payment_Detailed
+				Where Sccc_Cash_Clousureline_ID = Cur_ClousureLines.Sccc_Cash_Clousureline_ID
+			)LOOP
+				v_validation := 'Y';
+				v_FinancialAccount := Cur_PaymentValidation.fin_financial_account_id;
+				v_typeacct := NULL;
+				IF (Cur_ClousureLines.Typeaccount= 'INC') THEN
+					v_typeacct:= 'BPD';
+					v_paymentamt:= 0;
+					v_depositamt:= Cur_PaymentValidation.amount;
+					v_status:='RPR';
+				ELSE
+					v_typeacct:= 'BPW';
+					v_paymentamt:= Cur_PaymentValidation.amount;
+					v_depositamt:= 0;
+					v_status:= 'PPM';
+				END IF;
+				if(v_depositamt>v_paymentamt) 
+					Then 	v_status	:='RDNC';
+					Else 	v_status	:='PWNC';
+				End If;
+
+				vDescription := Cur_PaymentValidation.description;
+				vReferenceNo := Cur_PaymentValidation.em_sscccin_deposit;
+
+				INSERT INTO fin_finacc_transaction(
+					fin_finacc_transaction_id		, ad_client_id			, ad_org_id			, created			, createdby
+					, updated				, updatedby			, isactive			, c_currency_id			, fin_financial_account_id	
+					, line			
+					, dateacct				, c_glitem_id			, status			, paymentamt			, depositamt
+					, processed				, processing			, posted			, trxtype			, statementdate		
+					, description				, c_costcenter_id		, em_sccc_iscashclousure	, EM_Aprm_Processed		, em_sccc_cash_clousure_id
+					, em_sscccin_reference
+				) VALUES (
+					get_uuid()				, v_AdClientID			, v_OrganizationId		, now()		, v_User_ID
+					, now()			, v_User_ID			, 'Y'				, '100'				, v_FinancialAccount
+					, (SELECT COALESCE(MAX(line),0)+10 FROM  fin_finacc_transaction WHERE fin_finacc_transaction_ID = v_FinancialAccount)
+					,  v_Process_Date			, v_ConceptID			, v_status			, v_paymentamt			, v_depositamt	
+					, 'Y'					, 'N'				, 'N'				, v_typeacct			, v_Process_Date
+					, substring(vDescription,1,3900)			, v_CostCenterID		, 'Y'				, 'R'				, v_RecordId
+					, vReferenceNo
+				);
+				update fin_financial_account set
+					currentbalance =  currentbalance + (v_depositamt - v_paymentamt)
+				Where  fin_financial_account_id = v_FinancialAccount;
+			End Loop;--END Cur_PaymentValidation
+
+			If(v_validation = 'N')Then--Normal
+				v_typeacct := NULL;
+				IF (Cur_ClousureLines.Typeaccount= 'INC') THEN
+					v_typeacct:= 'BPD';
+					v_paymentamt:= 0;
+					v_depositamt:= Cur_ClousureLines.amount;
+					v_status:='RPR';
+				ELSE
+					v_typeacct:= 'BPW';
+					v_paymentamt:= Cur_ClousureLines.amount;
+					v_depositamt:= 0;
+					v_status:= 'PPM';
+				END IF;
+				if(v_depositamt>v_paymentamt) 
+					Then 	v_status	:='RDNC';
+					Else 	v_status	:='PWNC';
+				End If;
+
+				INSERT INTO fin_finacc_transaction(
+					fin_finacc_transaction_id		, ad_client_id			, ad_org_id			, created			, createdby
+					, updated				, updatedby			, isactive			, c_currency_id			, fin_financial_account_id	
+					, line			
+					, dateacct				, c_glitem_id			, status			, paymentamt			, depositamt
+					, processed				, processing			, posted			, trxtype			, statementdate		
+					, description				, c_costcenter_id		, em_sccc_iscashclousure	, EM_Aprm_Processed		, em_sccc_cash_clousure_id
+					, em_sscccin_reference
+				) VALUES (
+					get_uuid()				, v_AdClientID			, v_OrganizationId		, now()		, v_User_ID
+					, now()			, v_User_ID			, 'Y'				, '100'				, v_FinancialAccount
+					, (SELECT COALESCE(MAX(line),0)+10 FROM  fin_finacc_transaction WHERE fin_finacc_transaction_ID = v_FinancialAccount)
+					,  v_Process_Date			, v_ConceptID			, v_status			, v_paymentamt			, v_depositamt	
+					, 'Y'					, 'N'				, 'N'				, v_typeacct			, v_Process_Date
+					, substring(vDescription,1,3900)			, v_CostCenterID		, 'Y'				, 'R'				, v_RecordId
+					, vReferenceNo
+				);
+				update fin_financial_account set
+					currentbalance =  currentbalance + (v_depositamt - v_paymentamt)
+				Where  fin_financial_account_id = v_FinancialAccount;		
+			End IF;-- END (v_validation = 'N')
+		End IF;--END (Cur_ClousureLines.EM_Scca_Type_Payment ='CA')
+	     END IF;-- END Cur_ClousureLines.amount <> 0
+    END LOOP; -- END Cur_ClousureLines
+    
+	v_ResultFunction:=NULL;
+	IF (v_Module>0) THEN
+		EXECUTE IMMEDIATE 'SELECT scca_processlines2('''||COALESCE(v_RecordId,'')||''','''||COALESCE(v_AdClientID,'')||''','''||COALESCE(v_OrganizationId,'')||''','''||COALESCE(v_User_ID,'')||''','''||
+		v_Process_Date||''','''||COALESCE(v_ConceptID,'')||''','''||COALESCE(v_NameSetup,'')||''','''|| COALESCE(v_CostCenterID,'')||''',''N'') FROM dual' INTO v_ResultFunction;
+	END IF;
+	
+	IF(trim(v_ResultFunction)='') THEN
+		v_ResultFunction:=NULL;
+	END IF;
+
+	IF (v_ResultFunction IS NOT NULL) THEN
+		
+	 AD_UPDATE_PINSTANCE(PInstance_ID, NULL, 'N', 0, v_ResultFunction) ;
+		RETURN;
+	END IF; 
+
+    
+        UPDATE sccc_cash_clousure SET docstatus='SCCC_PR' WHERE sccc_cash_clousure_ID= v_RecordId;
+     	UPDATE sccc_cash_clousure SET process='RE', em_sscccin_processed='Y' WHERE sccc_cash_clousure_ID= v_RecordId;
+
+    ELSE
+    IF(v_Process ='RE' AND v_Docstatus= 'SCCC_PR') THEN
+	UPDATE sccc_cash_clousure SET docstatus='SCCC_RG' WHERE sccc_cash_clousure_ID= v_RecordId;
+	UPDATE sccc_cash_clousure SET process='PR', em_sscccin_processed='N' WHERE sccc_cash_clousure_ID= v_RecordId;
+    END IF;
+  
+END IF;
+
+  AD_UPDATE_PINSTANCE(PInstance_ID, NULL, 'N', 1, '@Success@') ;
+    RETURN;
+ELSE
+    AD_UPDATE_PINSTANCE(PInstance_ID, NULL, 'N', 0, '@20501@') ;
+END IF;
+ELSE
+    AD_UPDATE_PINSTANCE(PInstance_ID, NULL, 'N', 0, '@Processing@') ;
+END IF;
+    
+  END;
+  EXCEPTION
+  WHEN OTHERS THEN
+    update sccc_cash_clousure set em_sscccin_procesing = 'N' where sccc_cash_clousure_id = v_RecordId;
+    v_ResultStr:= '@ERROR=' || SQLERRM;
+    DBMS_OUTPUT.PUT_LINE(v_ResultStr) ;
+    AD_UPDATE_PINSTANCE(PInstance_ID, NULL, 'N', 0, v_ResultStr) ;
+    RETURN;
+END SSCCCIN_PROCESS
+]]></body>
+    </function>
+  </database>

@@ -1,0 +1,600 @@
+<?xml version="1.0"?>
+  <database name="FUNCTION SSCCRPP_REPORT_CLOSE_CASH">
+    <function name="SSCCRPP_REPORT_CLOSE_CASH" type="NULL">
+      <parameter name="p_pinstance_id" type="VARCHAR" mode="in">
+        <default/>
+      </parameter>
+      <body><![CDATA[/*************************************************************************
+* The contents of this file are subject to the Openbravo  Public  License
+* Version  1.1  (the  "License"),  being   the  Mozilla   Public  License
+* Version 1.1  with a permitted attribution clause; you may not  use this
+* file except in compliance with the License. You  may  obtain  a copy of
+* the License at http://www.openbravo.com/legal/license.html
+* Software distributed under the License  is  distributed  on  an "AS IS"
+* basis, WITHOUT WARRANTY OF ANY KIND, either express or implied. See the
+* License for the specific  language  governing  rights  and  limitations
+* under the License.
+* The Original Code is Openbravo ERP.
+* The Initial Developer of the Original Code is Openbravo SLU
+* All portions are Copyright (C) 2001-2010 Openbravo SLU
+* All Rights Reserved.
+* Contributor(s):  ______________________________________.
+************************************************************************/
+  --  Logistice
+  v_ResultStr VARCHAR2(2000):='';
+  v_Message VARCHAR2(2000):='';
+  v_Result NUMBER:=1; -- 0=failure
+  v_Record_ID VARCHAR2(32) ;
+  v_AD_User_ID VARCHAR2(32) ;
+  v_AD_Client_ID VARCHAR2(32) ;
+  v_AD_Org_ID VARCHAR2(32) ;
+  --  Parameter
+  TYPE RECORD IS REF CURSOR;
+    Cur_Parameter RECORD;
+    Cur_Records RECORD;
+    Cur_CloseCash RECORD;
+    -- --Parameter variables
+    -- v_C_BPartner_ID VARCHAR(32); --OBTG:VARCHAR2--
+    -- v_Amount NUMERIC;
+    -- v_C_Currency_ID VARCHAR(32); --OBTG:VARCHAR2--
+    -- v_PaymentRule VARCHAR(60) ; --OBTG:VARCHAR2--
+    -- v_DatePlanned TIMESTAMP;
+    -- v_IsReceipt VARCHAR(1) ; --OBTG:VARCHAR2--
+    -- v_Description VARCHAR(60) ; --OBTG:VARCHAR2--
+    -- v_Status VARCHAR(60); --OBTG:VARCHAR2--
+  BEGIN
+    --  Update AD_PInstance
+    DBMS_OUTPUT.PUT_LINE('Updating PInstance - Processing ' || p_PInstance_ID) ;
+    v_ResultStr:='PInstanceNotFound';
+    AD_UPDATE_PINSTANCE(p_PInstance_ID, NULL, 'Y', NULL, NULL) ;
+  BEGIN --BODY
+    --  Get Parameters
+    v_ResultStr:='ReadingParameters';
+    FOR Cur_Parameter IN
+      (SELECT i.Record_ID,
+        p.ParameterName,
+        p.P_String,
+        p.P_Number,
+        p.P_Date,
+        i.AD_USER_ID,
+        i.ad_client_id,
+        i.ad_org_id
+      FROM AD_PInstance i
+      LEFT JOIN AD_PInstance_Para p
+        ON i.AD_PInstance_ID=p.AD_PInstance_ID
+      WHERE i.AD_PInstance_ID=p_PInstance_ID
+      )
+    LOOP
+      v_Record_ID:=Cur_Parameter.Record_ID;
+      v_AD_User_ID:=Cur_Parameter.AD_User_ID;
+      v_AD_Client_ID:=Cur_Parameter.ad_client_id;
+      v_AD_Org_ID:=Cur_Parameter.ad_org_id;
+    END LOOP; --  Get Parameter
+    DBMS_OUTPUT.PUT_LINE('  Record_ID=' || v_Record_ID) ;
+    --Read bank statement
+    v_ResultStr:='ReadingBankStatementLine '||v_record_Id;
+    --<<FINISH_PROCESS>>
+
+    -- OBTENEMOS LOS VALORES DEL CIERRE
+    SELECT ss.Sccc_Setup_ID, TO_CHAR(Closingdate,'dd/MM/yyyy') as fecha_c
+    INTO Cur_CloseCash
+    FROM sccc_cash_clousure cc
+    JOIN Sccc_Setup ss on cc.Sccc_Setup_ID=ss.Sccc_Setup_ID
+    JOIN ad_org o on o.ad_org_id=cc.ad_org_id
+    WHERE cc.sccc_cash_clousure_id = v_Record_ID;
+    --Eliminamos las lineas creadas anteriormente
+    DELETE FROM ssccrpp_report_lines WHERE close_cash = v_Record_ID;
+
+    --(VENTAS CONTADO) Facturas Contado g1
+    FOR Cur_Records IN
+      (
+        SELECT documentno as doc
+        , trim(bp.name) as cliente
+        , trim(pm.name) as m_pago
+        , concat(split_part( dt.name, '-', 1),'-',split_part( dt.name, '-', 2),'-',split_part( dt.name, '-', 3)) as t_doc
+        , totalpaid as total
+        , 1 as c_grupo
+        FROM c_invoice ci
+        LEFT JOIN c_bpartner bp on bp.c_bpartner_id = ci.c_bpartner_id
+        LEFT JOIN C_DocType dt on dt.C_DocType_id = ci.C_DocType_id
+        LEFT JOIN FIN_Paymentmethod pm on pm.FIN_Paymentmethod_ID = ci.FIN_Paymentmethod_ID
+        LEFT JOIN C_PaymentTerm pt on pt.C_PaymentTerm_id = ci.C_PaymentTerm_id
+        JOIN ( SELECT sd.C_Doctype_Sales_ID,ss.Sccc_Setup_ID
+        FROM Sccc_Setup ss
+        LEFT JOIN sscccin_invoice_doctype sd on sd.Sccc_Setup_ID = ss.Sccc_Setup_ID
+        GROUP BY 1,2
+        ) dc on dc.C_Doctype_Sales_ID=dt.C_DocType_id AND dc.Sccc_Setup_ID = Cur_CloseCash.Sccc_Setup_ID
+        WHERE ci.IsSOTrx='Y' 
+        AND pt.em_ssccrpp_upon_delivery = 'N'
+        AND coalesce(pt.EM_Sssovl_Paymenttype,'') <> 'CRED'
+        AND (ABS(grandtotal) = ABS(totalpaid))
+        AND round(OutstandingAmt,3) = 0
+        AND TO_CHAR(ci.dateinvoiced,'dd/MM/yyyy') = Cur_CloseCash.fecha_c
+      )
+    LOOP
+        INSERT INTO ssccrpp_report_lines(ssccrpp_report_lines_id, ad_client_id, ad_org_id, createdby, 
+                    updatedby, close_cash, client_name, doc_no, type_doc, paymentmethod, 
+                    close_cash_group, total)
+            VALUES (get_uuid(), v_AD_Client_ID, v_AD_Org_ID, v_AD_User_ID, v_AD_User_ID, v_Record_ID
+            , Cur_Records.cliente, Cur_Records.doc, Cur_Records.t_doc, Cur_Records.m_pago
+            , Cur_Records.c_grupo, Cur_Records.total);
+    END LOOP;
+
+    FOR Cur_Records IN
+      (
+        SELECT ci.documentno as doc
+        , bp.name as cliente
+        , pm.name as m_pago
+        , concat(split_part( dt.name, '-', 1),'-',split_part( dt.name, '-', 2),'-',split_part( dt.name, '-', 3)) as t_doc
+        , ci.totalpaid as total
+        , 1 as c_grupo
+        FROM c_invoice ci
+        LEFT JOIN c_bpartner bp on bp.c_bpartner_id = ci.c_bpartner_id
+        LEFT JOIN C_DocType dt on dt.C_DocType_id = ci.C_DocType_id
+        LEFT JOIN c_invoice cir on cir.c_invoice_id = ci.em_scnr_invoice_id
+        LEFT JOIN FIN_Paymentmethod pm on pm.FIN_Paymentmethod_ID = ci.FIN_Paymentmethod_ID
+        JOIN ( SELECT sd.C_Doctype_Credit_Notes_ID,ss.Sccc_Setup_ID
+        FROM Sccc_Setup ss
+        LEFT JOIN sscccin_invoice_doctype sd on sd.Sccc_Setup_ID = ss.Sccc_Setup_ID
+        GROUP BY 1,2
+        ) dc on dc.C_Doctype_Credit_Notes_ID=dt.C_DocType_id AND dc.Sccc_Setup_ID = Cur_CloseCash.Sccc_Setup_ID
+        WHERE ci.IsSOTrx='Y'
+        AND ci.em_scnr_invoice_id is not null
+        AND ci.dateinvoiced::date = cir.dateinvoiced::date
+        AND ABS(ci.grandtotal) = ABS(cir.grandtotal)
+        AND round(ci.OutstandingAmt,3) = 0
+        AND TO_CHAR(ci.dateinvoiced,'dd/MM/yyyy') = Cur_CloseCash.fecha_c
+      )
+    LOOP
+        INSERT INTO ssccrpp_report_lines(ssccrpp_report_lines_id, ad_client_id, ad_org_id, createdby, 
+                    updatedby, close_cash, client_name, doc_no, type_doc, paymentmethod, 
+                    close_cash_group, total)
+            VALUES (get_uuid(), v_AD_Client_ID, v_AD_Org_ID, v_AD_User_ID, v_AD_User_ID, v_Record_ID
+            , Cur_Records.cliente, Cur_Records.doc, Cur_Records.t_doc, Cur_Records.m_pago
+            , Cur_Records.c_grupo, Cur_Records.total);
+    END LOOP;
+
+    --Cobros g2
+        FOR Cur_Records IN
+      (
+        SELECT fecha_t
+        ,doc
+        ,cliente
+        ,m_pago
+        ,t_doc
+        ,CASE WHEN sum(total) = sum(total_line) THEN
+        CASE WHEN sum(total)=amount+used_credit THEN sum(total) - used_credit ELSE sum(total) END
+        ELSE sum(total) - used_credit  END as total
+        ,c_grupo
+        FROM (
+
+            SELECT
+            CASE WHEN cir.documentno is null AND pd.C_Glitem_ID is null THEN TO_CHAR(ci.dateinvoiced,'dd/MM/yyyy')
+            WHEN pd.C_Glitem_ID is not null  THEN TO_CHAR(p.paymentdate,'dd/MM/yyyy')
+            ELSE TO_CHAR(cir.dateinvoiced,'dd/MM/yyyy')
+            END as fecha_t
+            , p.documentno as doc
+            , bp.name as cliente
+            , pm.name as m_pago
+            , dt.name as t_doc
+            , psd.fin_payment_detail_id as factura
+            , round(p.amount,3) as amount
+            ,CASE WHEN round(p.amount,3) = 0  THEN psd.amount
+            WHEN round(p.amount,3) > round(psd.amount,3) THEN psd.amount
+            WHEN p.amount+round(p.used_credit,4) <> psd.amount THEN psd.amount
+            ELSE p.amount
+            END as total
+            , 2 as c_grupo
+            ,CASE WHEN round(p.generated_credit,4)=round(p.used_credit,4)
+            OR round(p.amount,3)+round(p.used_credit,3) = round(psd.amount,3)
+            THEN 0
+            ELSE coalesce(p.used_credit,0) END as used_credit
+            ,CASE WHEN round(p.amount,3) = 0  THEN psd.amount
+            WHEN round(p.amount,3) > round(psd.amount,3) AND round(psd.amount,3) >  0 THEN psd.amount
+            WHEN round(psd.amount,3) <  0 THEN 0
+            ELSE p.amount
+            END as total_line
+            FROM FIN_Payment p
+            LEFT JOIN c_bpartner bp on bp.c_bpartner_id = p.c_bpartner_id
+            LEFT JOIN FIN_Paymentmethod pm on pm.FIN_Paymentmethod_ID = p.FIN_Paymentmethod_ID
+            LEFT JOIN C_DocType dt on dt.C_DocType_id = p.C_DocType_id
+            LEFT JOIN fin_payment_detail pd on p.FIN_Payment_id=pd.FIN_Payment_id
+            LEFT JOIN fin_payment_scheduledetail psd on pd.fin_payment_detail_id=psd.fin_payment_detail_id
+            LEFT JOIN FIN_Payment_Schedule ps on psd.fin_payment_schedule_invoice=ps.fin_payment_schedule_id
+            LEFT JOIN c_invoice ci on ci.c_invoice_id=ps.c_invoice_id
+            LEFT JOIN c_invoice cir on cir.c_invoice_id = ci.em_scnr_invoice_id
+            JOIN ( SELECT sd.C_DocType_id,ss.Sccc_Setup_ID
+                FROM Sccc_Setup ss
+                JOIN Ssccso_Type_Of_Document sd on sd.Sccc_Setup_ID = ss.Sccc_Setup_ID
+                GROUP BY 1,2
+            ) dc on dc.C_DocType_id = dt.C_DocType_id AND dc.Sccc_Setup_ID = Cur_CloseCash.Sccc_Setup_ID
+            WHERE (pd.C_Glitem_ID is not null or ci.dateinvoiced::date = p.paymentdate::date )
+            AND  P.STATUS<>'RPR'
+            AND CASE WHEN cir.documentno is null AND pd.C_Glitem_ID is null THEN TO_CHAR(ci.dateinvoiced,'dd/MM/yyyy')
+            WHEN pd.C_Glitem_ID is not null  THEN TO_CHAR(p.paymentdate,'dd/MM/yyyy')
+            ELSE TO_CHAR(cir.dateinvoiced,'dd/MM/yyyy')
+            END = Cur_CloseCash.fecha_c
+
+        ) x
+        GROUP BY fecha_t,doc,cliente,m_pago,t_doc,used_credit,c_grupo,amount
+        ORDER BY doc
+      )
+    LOOP
+        INSERT INTO ssccrpp_report_lines(ssccrpp_report_lines_id, ad_client_id, ad_org_id, createdby, 
+                    updatedby, close_cash, client_name, doc_no, type_doc, paymentmethod, 
+                    close_cash_group, total)
+            VALUES (get_uuid(), v_AD_Client_ID, v_AD_Org_ID, v_AD_User_ID, v_AD_User_ID, v_Record_ID
+            , Cur_Records.cliente, Cur_Records.doc, Cur_Records.t_doc, Cur_Records.m_pago
+            , Cur_Records.c_grupo, Cur_Records.total);
+    END LOOP;
+
+    --OTROS COBROS Y ANTICIPOS g3
+    -- FOR Cur_Records IN
+    --   (
+    --     SELECT fecha_t
+    --     ,doc
+    --     ,cliente
+    --     ,m_pago
+    --     ,t_doc
+    --     ,CASE WHEN sum(total)=sum(total_line) AND amount_payment = sum(total_line) then sum(total) ELSE  (sum(total)-used_credit) END as total
+    --     ,cd
+    --     ,grupo
+    --     ,c_grupo
+    --     ,texto
+    --     FROM (
+    --     SELECT TO_CHAR(p.paymentdate,'dd/MM/yyyy') as fecha_t
+    --     , psd.fin_payment_scheduledetail_id as c_usuario
+    --     , p.documentno as doc
+    --     , CASE WHEN P.STATUS = 'RPVOID' THEN 'ANULADO' ELSE bp.name END as cliente
+    --     , pm.name as m_pago
+    --     , dt.name as t_doc,
+    --     '' as factura
+    --     , sum(COALESCE(CASE WHEN (round(p.amount,3)=0 AND p.status<>'RPR') THEN psd.amount
+    --     WHEN (round(p.amount,3)=0 AND p.status='RPR') THEN 0
+    --     WHEN round(psd.amount,3)<round(p.amount,3) AND p.amount+round(p.generated_credit,4) <> psd.amount  THEN psd.amount
+    --     WHEN P.STATUS = 'RPVOID' Then 0
+    --     ELSE p.amount
+    --     END,0)) as total
+    --     , true as cd
+    --     , 'OTROS COBROS Y ANTICIPOS' as grupo
+    --     , 3 as c_grupo
+    --     , 'Total  Otros Cobros' as texto
+    --     ,CASE WHEN round(p.generated_credit,4)=round(p.used_credit,4) THEN 0
+    --     WHEN round(p.generated_credit,4)=round(p.amount,4) THEN 0
+    --     WHEN round(p.used_credit,4)>round(p.amount,4) THEN 0
+    --     ELSE coalesce(p.used_credit,0) END as used_credit
+    --     , sum(COALESCE(CASE WHEN (round(p.amount,3)=0 AND p.status<>'RPR') THEN psd.amount
+    --     WHEN (round(p.amount,3) = 0 AND p.status='RPR') THEN 0
+    --     WHEN round(psd.amount,3)<round(p.amount,3) AND  round(psd.amount,3) > 0 AND round(p.generated_credit,4)=0 THEN psd.amount
+    --     WHEN round(psd.amount,3)<round(p.amount,3) AND  round(psd.amount,3) > 0 AND round(p.generated_credit,4)<>psd.amount THEN psd.amount
+    --     WHEN round(psd.amount,3)<round(p.amount,3) AND  round(psd.amount,3) > 0 AND round(p.generated_credit,4)=round(psd.amount,3) THEN round(p.generated_credit,4)
+    --     WHEN round(psd.amount,3) < 0 THEN 0
+    --     WHEN P.STATUS = 'RPVOID' Then 0
+    --     ELSE p.amount
+    --     END,0)) as total_line
+    --     ,p.amount as amount_payment
+    --     FROM FIN_Payment p
+    --     LEFT JOIN c_bpartner bp on bp.c_bpartner_id = p.c_bpartner_id
+    --     LEFT JOIN FIN_Paymentmethod pm on pm.FIN_Paymentmethod_ID = p.FIN_Paymentmethod_ID
+    --     LEFT JOIN C_DocType dt on dt.C_DocType_id = p.C_DocType_id
+    --     LEFT JOIN fin_payment_detail pd on p.FIN_Payment_id=pd.FIN_Payment_id
+    --     LEFT JOIN fin_payment_scheduledetail psd on pd.fin_payment_detail_id=psd.fin_payment_detail_id
+    --     LEFT JOIN FIN_Payment_Schedule ps on psd.fin_payment_schedule_invoice=ps.fin_payment_schedule_id
+    --     LEFT JOIN c_invoice ci on ci.c_invoice_id=ps.c_invoice_id
+    --     LEFT JOIN c_invoice cir on cir.c_invoice_id = ci.em_scnr_invoice_id
+    --     JOIN ( SELECT sd.C_DocType_id,ss.Sccc_Setup_ID
+    --     FROM Sccc_Setup ss
+    --     JOIN Ssccso_Type_Of_Document sd on sd.Sccc_Setup_ID = ss.Sccc_Setup_ID
+    --     GROUP BY 1,2
+    --     ) dc on dc.C_DocType_id=dt.C_DocType_id AND dc.Sccc_Setup_ID=Cur_CloseCash.Sccc_Setup_ID
+    --     WHERE (ci.dateinvoiced::date<>p.paymentdate::date or cir.dateinvoiced::date<>p.paymentdate::date or (cir.dateinvoiced is null and ci.dateinvoiced is null AND p.status='RPVOID'))
+    --     AND (P.STATUS<>'RPAP')
+    --     AND TO_CHAR(p.paymentdate,'dd/MM/yyyy') = Cur_CloseCash.fecha_c
+    --     GROUP BY fecha_t,c_usuario,doc,cliente,generated_credit,generated_credit,p.amount,used_credit,m_pago,t_doc
+    --     UNION
+    --     SELECT TO_CHAR(p.paymentdate,'dd/MM/yyyy') as fecha_t
+    --     , psd.fin_payment_scheduledetail_id as c_usuario
+    --     , p.documentno as doc
+    --     , bp.name as cliente
+    --     , pm.name as m_pago
+    --     , dt.name as t_doc,
+    --     '' as factura
+    --     , sum(CASE WHEN (round(p.amount,3)=0 AND p.status<>'RPR') THEN psd.amount
+    --     WHEN (round(p.amount,3)=0 AND p.status='RPR') THEN 0
+    --     WHEN (round(psd.amount,3)<round(p.amount,3) OR round(psd.amount,3)>round(p.amount,3)) AND round(p.generated_credit,4) = 0 AND round(p.used_credit,4) = 0 THEN psd.amount
+    --     WHEN (round(psd.amount,3)<round(p.amount,3) OR round(psd.amount,3)>round(p.amount,3)) AND round(p.generated_credit,4)=round(psd.amount,3) THEN round(p.generated_credit,4)
+    --     ELSE p.amount
+    --     END) as total
+    --     , true as cd
+    --     , 'OTROS COBROS Y ANTICIPOS' as grupo
+    --     , 3 as c_grupo
+    --     , 'Total  Otros Cobros' as texto
+    --     ,CASE WHEN round(p.generated_credit,4)=round(p.used_credit,4) THEN 0
+    --     WHEN round(p.generated_credit,4)=round(p.amount,4) THEN 0
+    --     WHEN round(p.used_credit,4)>round(p.amount,4) THEN 0
+    --     ELSE coalesce(p.used_credit,0) END as used_credit
+    --     , sum(CASE WHEN (round(p.amount,3)=0 AND p.status<>'RPR') THEN psd.amount
+    --     WHEN (round(p.amount,3)=0 AND p.status='RPR') THEN 0
+    --     WHEN round(psd.amount,3)<round(p.amount,3) AND  round(psd.amount,3) > 0 AND round(p.generated_credit,4)=0 THEN psd.amount
+    --     WHEN round(psd.amount,3)<round(p.amount,3) AND  round(psd.amount,3) > 0 AND round(p.generated_credit,4)=round(psd.amount,3) THEN round(p.generated_credit,4)
+    --     WHEN round(psd.amount,3) < 0 THEN 0
+    --     ELSE p.amount
+    --     END) as total_line
+    --     ,p.amount as amount_payment
+    --     FROM FIN_Payment p
+    --     LEFT JOIN c_bpartner bp on bp.c_bpartner_id = p.c_bpartner_id
+    --     LEFT JOIN FIN_Paymentmethod pm on pm.FIN_Paymentmethod_ID = p.FIN_Paymentmethod_ID
+    --     LEFT JOIN C_DocType dt on dt.C_DocType_id = p.C_DocType_id
+    --     LEFT JOIN fin_payment_detail pd on p.FIN_Payment_id=pd.FIN_Payment_id
+    --     LEFT JOIN fin_payment_scheduledetail psd on pd.fin_payment_detail_id=psd.fin_payment_detail_id
+    --     LEFT JOIN FIN_Payment_Schedule ps on psd.fin_payment_schedule_invoice=ps.fin_payment_schedule_id
+    --     LEFT JOIN c_invoice ci on ci.c_invoice_id=ps.c_invoice_id
+    --     LEFT JOIN c_invoice cir on cir.c_invoice_id = ci.em_scnr_invoice_id
+    --     JOIN ( SELECT sd.C_DocType_id,ss.Sccc_Setup_ID
+    --     FROM Sccc_Setup ss
+    --     JOIN Ssccso_Type_Of_Document sd on sd.Sccc_Setup_ID = ss.Sccc_Setup_ID
+    --     GROUP BY 1,2
+    --     ) dc on dc.C_DocType_id=dt.C_DocType_id AND dc.Sccc_Setup_ID=Cur_CloseCash.Sccc_Setup_ID
+    --     WHERE  (ci.c_invoice_id is null AND cir.c_invoice_id is null)
+    --     AND P.STATUS<>'RPVOID' AND  P.STATUS<>'RPAP'
+    --     AND round(p.generated_credit,4)>0
+    --     AND TO_CHAR(p.paymentdate,'dd/MM/yyyy') = Cur_CloseCash.fecha_c
+    --     GROUP BY fecha_t,c_usuario,doc,cliente,generated_credit,used_credit,p.amount,m_pago,t_doc ) x
+    --     where doc not like '%*Z*%' AND doc not in (
+    --     select doc from (
+    --     SELECT
+    --     CASE WHEN cir.documentno is null AND pd.C_Glitem_ID is null THEN TO_CHAR(ci.dateinvoiced,'dd/MM/yyyy')
+    --     WHEN pd.C_Glitem_ID is not null  THEN TO_CHAR(p.paymentdate,'dd/MM/yyyy')
+    --     ELSE TO_CHAR(cir.dateinvoiced,'dd/MM/yyyy')
+    --     END as fecha_t
+    --     , '' as c_usuario
+    --     , p.documentno as doc
+    --     , bp.name as cliente
+    --     , pm.name as m_pago
+    --     , dt.name as t_doc
+    --     , psd.fin_payment_detail_id as factura
+    --     ,CASE WHEN round(p.amount,3) = 0  THEN psd.amount
+    --     WHEN round(p.amount,3) > round(psd.amount,3) THEN psd.amount
+    --         WHEN p.amount+round(p.used_credit,4) <> psd.amount THEN psd.amount
+    --     ELSE p.amount
+    --     END as total
+    --     ,CASE WHEN round(p.generated_credit,4)=round(p.used_credit,4)
+    --     OR round(p.amount,3)+round(p.used_credit,3) = round(psd.amount,3)
+    --     THEN 0
+    --     ELSE coalesce(p.used_credit,0) END as used_credit
+    --     ,CASE WHEN round(p.amount,3) = 0  THEN psd.amount
+    --     WHEN round(p.amount,3) > round(psd.amount,3) AND round(psd.amount,3) >  0 THEN psd.amount
+    --     WHEN round(psd.amount,3) <  0 THEN 0
+    --     ELSE p.amount
+    --     END as total_line
+    --     ,p.amount as importe
+    --     FROM FIN_Payment p
+    --     LEFT JOIN c_bpartner bp on bp.c_bpartner_id = p.c_bpartner_id
+    --     LEFT JOIN FIN_Paymentmethod pm on pm.FIN_Paymentmethod_ID = p.FIN_Paymentmethod_ID
+    --     LEFT JOIN C_DocType dt on dt.C_DocType_id = p.C_DocType_id
+    --     LEFT JOIN fin_payment_detail pd on p.FIN_Payment_id=pd.FIN_Payment_id
+    --     LEFT JOIN fin_payment_scheduledetail psd on pd.fin_payment_detail_id=psd.fin_payment_detail_id
+    --     LEFT JOIN FIN_Payment_Schedule ps on psd.fin_payment_schedule_invoice=ps.fin_payment_schedule_id
+    --     LEFT JOIN c_invoice ci on ci.c_invoice_id=ps.c_invoice_id
+    --     LEFT JOIN c_invoice cir on cir.c_invoice_id = ci.em_scnr_invoice_id
+    --     JOIN ( SELECT sd.C_DocType_id,ss.Sccc_Setup_ID
+    --     FROM Sccc_Setup ss
+    --     JOIN Ssccso_Type_Of_Document sd on sd.Sccc_Setup_ID = ss.Sccc_Setup_ID
+    --     GROUP BY 1,2
+    --     ) dc on dc.C_DocType_id=dt.C_DocType_id AND dc.Sccc_Setup_ID=Cur_CloseCash.Sccc_Setup_ID
+    --     WHERE (pd.C_Glitem_ID is not null or ci.dateinvoiced::date=p.paymentdate::date )
+    --     AND  P.STATUS<>'RPR') x
+    --     GROUP BY fecha_t,doc,cliente,m_pago,t_doc,used_credit,importe
+    --     HAVING CASE WHEN sum(total) = sum(total_line) THEN sum(total) ELSE sum(total) - used_credit END >= importe)
+    --     GROUP BY fecha_t,doc,cliente,m_pago,used_credit,t_doc,cd,grupo,c_grupo,texto,amount_payment
+    --     ORDER BY doc
+    --   )
+    -- LOOP
+    --     INSERT INTO ssccrpp_report_lines(ssccrpp_report_lines_id, ad_client_id, ad_org_id, createdby, 
+    --                 updatedby, close_cash, client_name, doc_no, type_doc, paymentmethod, 
+    --                 close_cash_group, total)
+    --         VALUES (get_uuid(), v_AD_Client_ID, v_AD_Org_ID, v_AD_User_ID, v_AD_User_ID, v_Record_ID
+    --         , Cur_Records.cliente, Cur_Records.doc, Cur_Records.t_doc, Cur_Records.m_pago
+    --         , Cur_Records.c_grupo, Cur_Records.total);
+    -- END LOOP;
+
+    -- --Ingresos y Egresos de caja g4
+    FOR Cur_Records IN
+      (
+        SELECT ex.documentno as doc
+        , bp.name as cliente
+        , pm.name as m_pago
+        , upper(concat(lt.name,' ',cg.name)) as t_doc
+        , CASE WHEN ex.type_of_operation='BPD' THEN ex.Deposit_Amount
+            ELSE Refund_Amount*-1
+        END as total
+        , 4 as c_grupo
+        FROM Ssccso_Cash_Inc_Exp ex
+        LEFT JOIN c_bpartner bp on bp.c_bpartner_id = ex.c_bpartner_id
+        LEFT JOIN C_DocType dt on dt.C_DocType_id = ex.C_DocType_id
+        LEFT JOIN C_Glitem cg on cg.C_Glitem_ID = ex.C_Glitem_ID
+        LEFT JOIN FIN_Paymentmethod pm on pm.FIN_Paymentmethod_ID = ex.FIN_Paymentmethod_ID
+        LEFT JOIN (SELECT rlt.name,rl.value from ad_ref_list  rl
+        LEFT JOIN ad_ref_list_trl rlt ON rl.ad_ref_list_id=rlt.ad_ref_list_id
+            WHERE ad_reference_id  ='4EFC9773F30B4ACE97D225BD13CFF8CB') lt on ex.type_of_operation=lt.value
+        JOIN ( SELECT sd.C_DocType_id as C_DocType_id,ss.Sccc_Setup_ID
+            FROM Sccc_Setup ss
+            JOIN Ssccso_Type_Of_Document sd on sd.Sccc_Setup_ID = ss.Sccc_Setup_ID
+            GROUP BY 1,2
+            UNION
+            SELECT sd.C_Doctype_Credit_Notes_ID as C_DocType_id,ss.Sccc_Setup_ID
+            FROM Sccc_Setup ss
+            JOIN sscccin_invoice_doctype sd on sd.Sccc_Setup_ID=ss.Sccc_Setup_ID
+            GROUP BY 1,2
+            UNION
+            SELECT sd.C_Doctype_Sales_ID as C_DocType_id,ss.Sccc_Setup_ID
+            FROM Sccc_Setup ss
+            JOIN sscccin_invoice_doctype sd on sd.Sccc_Setup_ID=ss.Sccc_Setup_ID
+            GROUP BY 1,2
+                ) dc on dc.C_DocType_id=ex.C_DocType_id AND dc.Sccc_Setup_ID = Cur_CloseCash.Sccc_Setup_ID
+        WHERE coalesce(status,'') = 'PR'
+        AND TO_CHAR(ex.Dateactual,'dd/MM/yyyy') = Cur_CloseCash.fecha_c
+        ORDER BY doc
+      )
+    LOOP
+        INSERT INTO ssccrpp_report_lines(ssccrpp_report_lines_id, ad_client_id, ad_org_id, createdby, 
+                    updatedby, close_cash, client_name, doc_no, type_doc, paymentmethod, 
+                    close_cash_group, total)
+            VALUES (get_uuid(), v_AD_Client_ID, v_AD_Org_ID, v_AD_User_ID, v_AD_User_ID, v_Record_ID
+            , Cur_Records.cliente, Cur_Records.doc, Cur_Records.t_doc, Cur_Records.m_pago
+            , Cur_Records.c_grupo, Cur_Records.total);
+    END LOOP;
+
+    -- --VENTAS CREDITO g5
+    FOR Cur_Records IN
+      (
+        SELECT documentno as doc
+        , bp.name as cliente
+        , pm.name as m_pago
+        , concat(split_part( dt.name, '-', 1),'-',split_part( dt.name, '-', 2),'-',split_part( dt.name, '-', 3)) as t_doc
+        , ci.grandtotal as total
+        , 5 as c_grupo
+        FROM c_invoice ci
+        LEFT JOIN c_bpartner bp on bp.c_bpartner_id = ci.c_bpartner_id
+        LEFT JOIN C_DocType dt on dt.C_DocType_id = ci.C_DocType_id
+        LEFT JOIN FIN_Paymentmethod pm on pm.FIN_Paymentmethod_ID = ci.FIN_Paymentmethod_ID
+        LEFT JOIN C_PaymentTerm pt on pt.C_PaymentTerm_id = ci.C_PaymentTerm_id
+        JOIN ( SELECT sd.C_Doctype_Credit_Notes_ID as C_DocType_id,ss.Sccc_Setup_ID
+            FROM Sccc_Setup ss
+            JOIN sscccin_invoice_doctype sd on sd.Sccc_Setup_ID=ss.Sccc_Setup_ID
+            GROUP BY 1,2
+            UNION
+            SELECT sd.C_Doctype_Sales_ID as C_DocType_id,ss.Sccc_Setup_ID
+            FROM Sccc_Setup ss
+            JOIN sscccin_invoice_doctype sd on sd.Sccc_Setup_ID=ss.Sccc_Setup_ID
+            GROUP BY 1,2
+        ) dc on dc.C_DocType_id=dt.C_DocType_id AND dc.Sccc_Setup_ID=Cur_CloseCash.Sccc_Setup_ID
+        WHERE coalesce(pt.EM_Sssovl_Paymenttype,'') not in ('CONT','CRES')
+        AND ci.IsSOTrx='Y' AND TO_CHAR(ci.dateinvoiced,'dd/MM/yyyy')=Cur_CloseCash.fecha_c
+        AND round(OutstandingAmt,3)>=0
+        ORDER BY doc
+      )
+    LOOP
+        INSERT INTO ssccrpp_report_lines(ssccrpp_report_lines_id, ad_client_id, ad_org_id, createdby, 
+                    updatedby, close_cash, client_name, doc_no, type_doc, paymentmethod, 
+                    close_cash_group, total)
+            VALUES (get_uuid(), v_AD_Client_ID, v_AD_Org_ID, v_AD_User_ID, v_AD_User_ID, v_Record_ID
+            , Cur_Records.cliente, Cur_Records.doc, Cur_Records.t_doc, Cur_Records.m_pago
+            , Cur_Records.c_grupo, Cur_Records.total);
+    END LOOP;
+
+    --RETENCIONES CONTADO g7
+    FOR Cur_Records IN
+      (
+        SELECT ws.documentno as doc
+        , bp.name as cliente,'' as m_pago
+        , ci.documentno as t_doc
+        , ws.totalwhrentalamt + totalwhivaamt as total
+        , 7 as c_grupo
+        FROM ssws_withholdingsale ws
+        LEFT JOIN c_bpartner bp on bp.c_bpartner_id = ws.c_bpartner_id
+        LEFT JOIN C_DocType dt on dt.C_DocType_id = ws.C_DocType_id
+        LEFT JOIN c_invoice ci on ci.c_invoice_id = ws.c_invoice_id
+        JOIN (SELECT ss.ad_org_id,su.ad_user_id,ss.Sccc_Setup_ID
+            FROM Sccc_Setup ss
+            JOIN sccc_user su on su.Sccc_Setup_ID=ss.Sccc_Setup_ID
+            GROUP BY 1,2,3
+        ) dc on dc.ad_org_id=ws.ad_org_id AND dc.ad_user_id=ws.createdby
+        AND dc.Sccc_Setup_ID=Cur_CloseCash.Sccc_Setup_ID
+        WHERE ci.IsSOTrx='Y' AND ws.docstatus='CO'
+        AND ws.withholdingdate::date = ci.dateinvoiced::date
+        AND TO_CHAR(ws.created,'dd/MM/yyyy') = Cur_CloseCash.fecha_c
+        ORDER BY doc
+      )
+    LOOP
+        INSERT INTO ssccrpp_report_lines(ssccrpp_report_lines_id, ad_client_id, ad_org_id, createdby, 
+                    updatedby, close_cash, client_name, doc_no, type_doc, paymentmethod, 
+                    close_cash_group, total)
+            VALUES (get_uuid(), v_AD_Client_ID, v_AD_Org_ID, v_AD_User_ID, v_AD_User_ID, v_Record_ID
+            , Cur_Records.cliente, Cur_Records.doc, Cur_Records.t_doc, Cur_Records.m_pago
+            , Cur_Records.c_grupo, Cur_Records.total);
+    END LOOP;
+
+    --RETENCIONES FACTURAS ANTERIORES g8
+    FOR Cur_Records IN
+      (
+        SELECT ws.documentno as doc
+        , bp.name as cliente
+        , '' as m_pago
+        , ci.documentno as t_doc
+        , ws.totalwhrentalamt + totalwhivaamt as total
+        , 8 as c_grupo
+        FROM ssws_withholdingsale ws
+        LEFT JOIN c_bpartner bp on bp.c_bpartner_id = ws.c_bpartner_id
+        LEFT JOIN C_DocType dt on dt.C_DocType_id = ws.C_DocType_id
+        LEFT JOIN c_invoice ci on ci.c_invoice_id = ws.c_invoice_id
+        JOIN (SELECT ss.ad_org_id,su.ad_user_id,ss.Sccc_Setup_ID
+            FROM Sccc_Setup ss
+            JOIN sccc_user su on su.Sccc_Setup_ID=ss.Sccc_Setup_ID
+            GROUP BY 1,2,3
+        ) dc on dc.ad_org_id = ws.ad_org_id AND dc.ad_user_id = ws.createdby
+        AND dc.Sccc_Setup_ID = Cur_CloseCash.Sccc_Setup_ID
+        WHERE ci.IsSOTrx='Y' AND ws.docstatus='CO'
+        AND ws.withholdingdate::date <> ci.dateinvoiced::date
+        AND TO_CHAR(ws.created,'dd/MM/yyyy') = Cur_CloseCash.fecha_c
+        ORDER BY doc
+      )
+    LOOP
+        INSERT INTO ssccrpp_report_lines(ssccrpp_report_lines_id, ad_client_id, ad_org_id, createdby, 
+                    updatedby, close_cash, client_name, doc_no, type_doc, paymentmethod, 
+                    close_cash_group, total)
+            VALUES (get_uuid(), v_AD_Client_ID, v_AD_Org_ID, v_AD_User_ID, v_AD_User_ID, v_Record_ID
+            , Cur_Records.cliente, Cur_Records.doc, Cur_Records.t_doc, Cur_Records.m_pago
+            , Cur_Records.c_grupo, Cur_Records.total);
+    END LOOP;
+
+    --DETALLE DE RECAPS g9
+    FOR Cur_Records IN
+      (
+        SELECT ft.EM_Ssccr_Lot  as doc
+        , sb.name as cliente
+        , st.name as m_pago
+        , sc.name as t_doc
+        , ft.Depositamt as total
+        , 9 as c_grupo
+        FROM FIN_Financial_Account fa
+        LEFT JOIN FIN_Finacc_Transaction ft on ft.FIN_Financial_Account_id=fa.FIN_Financial_Account_id
+        LEFT JOIN Ssccr_Cards_Types sc on ft.EM_Ssccr_Cards_Types_ID=sc.Ssccr_Cards_Types_ID
+        LEFT JOIN Ssfi_Banktransfer sb on ft.EM_Ssccr_Ssfi_Banktransfer_ID=sb.Ssfi_Banktransfer_ID
+        LEFT JOIN Ssccr_Types_Of_Credit st on ft.EM_Ssccr_Types_Of_Credit_ID=st.Ssccr_Types_Of_Credit_ID
+        LEFT JOIN FIN_payment py on py.FIN_payment_id=ft.FIN_payment_id
+        JOIN ( SELECT sd.C_DocType_id,ss.Sccc_Setup_ID
+        FROM Sccc_Setup ss
+        JOIN Ssccso_Type_Of_Document sd on sd.Sccc_Setup_ID = ss.Sccc_Setup_ID
+        GROUP BY 1,2
+        ) dc on dc.C_DocType_id=py.C_DocType_id AND dc.Sccc_Setup_ID = Cur_CloseCash.Sccc_Setup_ID
+        WHERE Trxtype='BPD'
+        AND sc.name is not null
+        AND TO_CHAR(ft.Statementdate,'dd/MM/yyyy') = Cur_CloseCash.fecha_c
+        ORDER BY t_doc,cliente
+      )
+    LOOP
+        INSERT INTO ssccrpp_report_lines(ssccrpp_report_lines_id, ad_client_id, ad_org_id, createdby, 
+                    updatedby, close_cash, client_name, doc_no, type_doc, paymentmethod, 
+                    close_cash_group, total)
+            VALUES (get_uuid(), v_AD_Client_ID, v_AD_Org_ID, v_AD_User_ID, v_AD_User_ID, v_Record_ID
+            , Cur_Records.cliente, Cur_Records.doc, Cur_Records.t_doc, Cur_Records.m_pago
+            , Cur_Records.c_grupo, Cur_Records.total);
+    END LOOP;
+
+    --  Update AD_PInstance
+    DBMS_OUTPUT.PUT_LINE('Updating PInstance - Finished ' || v_Message) ;
+    AD_UPDATE_PINSTANCE(p_PInstance_ID, NULL, 'N', v_Result, v_Message) ;
+    RETURN;
+  END; --BODY
+EXCEPTION
+WHEN OTHERS THEN
+  v_ResultStr:= '@ERROR=' || SQLERRM;
+  DBMS_OUTPUT.PUT_LINE(v_ResultStr) ;
+  ROLLBACK;
+  AD_UPDATE_PINSTANCE(p_PInstance_ID, NULL, 'N', 0, v_ResultStr) ;
+  RETURN;
+END SSCCRPP_REPORT_CLOSE_CASH
+]]></body>
+    </function>
+  </database>

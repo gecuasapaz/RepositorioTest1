@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<SqlClass name="CloseCashValdtData" package="ec.com.sidesoft.closecash.report.print.ad_Reports" accessModifier="public">
+   <SqlClassComment></SqlClassComment>
+
+  <SqlMethod name="select" type="preparedStatement" return="multiple">
+    <SqlMethodComment></SqlMethodComment>
+    <Sql>
+      <![CDATA[
+	select * from ( select fechat,caja,doc,cliente,mpago,tdoc,sum(total),cd,grupo,cgrupo,texto from ( 
+	SELECT
+		CASE WHEN cir.documentno is null AND pd.C_Glitem_ID is null THEN TO_CHAR(ci.dateinvoiced,'dd/MM/yyyy')
+			WHEN pd.C_Glitem_ID is not null  THEN TO_CHAR(p.paymentdate,'dd/MM/yyyy')
+			ELSE TO_CHAR(cir.dateinvoiced,'dd/MM/yyyy')
+		END as fechat
+		, sccc_cash_clousure_id as caja
+		, p.documentno as doc
+		, bp.name as cliente
+		, pm.name as mpago
+		, dt.name as tdoc
+		, psd.fin_payment_detail_id as factura
+		,CASE WHEN round(p.amount,3) = 0  THEN psd.amount
+			WHEN round(p.amount,3) > round(psd.amount,3) THEN psd.amount
+			ELSE p.amount
+		END as total
+		, true as cd
+		, 'COBROS CONTADO' as grupo
+		, 2 as cgrupo
+		, 'Subtotal' as texto
+	FROM FIN_Payment p
+		left Join c_bpartner bp on bp.c_bpartner_id = p.c_bpartner_id
+		left Join FIN_Paymentmethod pm on pm.FIN_Paymentmethod_ID = p.FIN_Paymentmethod_ID
+		left Join C_DocType dt on dt.C_DocType_id = p.C_DocType_id
+		left join fin_payment_detail pd on p.FIN_Payment_id=pd.FIN_Payment_id
+		left join fin_payment_scheduledetail psd on pd.fin_payment_detail_id=psd.fin_payment_detail_id
+		left join FIN_Payment_Schedule ps on psd.fin_payment_schedule_invoice=ps.fin_payment_schedule_id
+		left join c_invoice ci on ci.c_invoice_id=ps.c_invoice_id
+		left Join c_invoice cir on cir.c_invoice_id = ci.em_scnr_invoice_id
+		inner join ad_org org on org.ad_org_id=p.ad_org_id
+		inner join Sccc_Setup ss on ss.ad_org_id=p.ad_org_id
+		inner join Ssccso_Type_Of_Document sd on sd.Sccc_Setup_ID = ss.Sccc_Setup_ID AND dt.C_DocType_id=sd.C_DocType_id
+		inner join sccc_cash_clousure cc on cc.Sccc_Setup_ID=ss.Sccc_Setup_ID
+	WHERE (pd.C_Glitem_ID is not null or ci.dateinvoiced::date=p.paymentdate::date )
+	AND CASE WHEN cir.documentno is null AND pd.C_Glitem_ID is null THEN ci.dateinvoiced::date
+			WHEN pd.C_Glitem_ID is not null  THEN p.paymentdate::date
+			ELSE cir.dateinvoiced::date
+		END = cc.Closingdate::date
+		AND CASE WHEN cir.documentno is null AND pd.C_Glitem_ID is null THEN TO_CHAR(ci.dateinvoiced,'dd/MM/yyyy')
+			WHEN pd.C_Glitem_ID is not null  THEN TO_CHAR(p.paymentdate,'dd/MM/yyyy')
+			ELSE TO_CHAR(cir.dateinvoiced,'dd/MM/yyyy')
+		END = ?
+		AND sccc_cash_clousure_ID=?
+		AND  P.STATUS<>'RPR') x 
+	group by fechat,doc,caja,cliente,mpago,tdoc,cd,grupo,cgrupo,texto
+	UNION
+	SELECT fechat,caja,doc,cliente,mpago,tdoc,sum(total),cd,grupo,cgrupo,texto from (
+	SELECT TO_CHAR(p.paymentdate,'dd/MM/yyyy') as fechat
+		, sccc_cash_clousure_id as caja
+		, p.documentno as doc
+		, CASE WHEN P.STATUS = 'RPVOID' THEN 'ANULADO' ELSE bp.name END as cliente
+		, pm.name as mpago
+		, dt.name as tdoc,'' as factura
+		, sum(COALESCE(CASE WHEN (round(p.amount,3)=0 AND p.status<>'RPR') THEN psd.amount
+			WHEN (round(p.amount,3)=0 AND p.status='RPR') THEN 0
+			WHEN round(psd.amount,3)<round(p.amount,3)  THEN psd.amount
+			WHEN P.STATUS = 'RPVOID' Then 0
+			ELSE p.amount
+		END,0)) as total
+		, true as cd
+		, 'OTROS COBROS Y ANTICIPOS' as grupo
+		, 3 as cgrupo
+		, 'Total  Otros Cobros' as texto
+	FROM FIN_Payment p
+		left Join c_bpartner bp on bp.c_bpartner_id = p.c_bpartner_id
+		left Join FIN_Paymentmethod pm on pm.FIN_Paymentmethod_ID = p.FIN_Paymentmethod_ID
+		left Join C_DocType dt on dt.C_DocType_id = p.C_DocType_id
+		left join fin_payment_detail pd on p.FIN_Payment_id=pd.FIN_Payment_id
+		left join fin_payment_scheduledetail psd on pd.fin_payment_detail_id=psd.fin_payment_detail_id
+		left join FIN_Payment_Schedule ps on psd.fin_payment_schedule_invoice=ps.fin_payment_schedule_id
+		left join c_invoice ci on ci.c_invoice_id=ps.c_invoice_id
+		left Join c_invoice cir on cir.c_invoice_id = ci.em_scnr_invoice_id
+		inner join ad_org org on org.ad_org_id=p.ad_org_id
+		inner join Sccc_Setup ss on ss.ad_org_id=p.ad_org_id
+		inner join Ssccso_Type_Of_Document sd on sd.Sccc_Setup_ID = ss.Sccc_Setup_ID AND dt.C_DocType_id=sd.C_DocType_id
+		inner join sccc_cash_clousure cc on cc.Sccc_Setup_ID=ss.Sccc_Setup_ID
+		WHERE (ci.dateinvoiced::date<>p.paymentdate::date or cir.dateinvoiced::date<>p.paymentdate::date)
+			AND (P.STATUS<>'RPAP') AND p.paymentdate=cc.Closingdate::date
+		AND TO_CHAR(p.paymentdate,'dd/MM/yyyy')=?
+		AND sccc_cash_clousure_ID=?
+		GROUP BY fechat,doc,cliente,caja,mpago,tdoc
+	UNION
+	SELECT TO_CHAR(p.paymentdate,'dd/MM/yyyy') as fechat
+		, sccc_cash_clousure_id as caja
+		, p.documentno as doc
+		, bp.name as cliente
+		, pm.name as mpago
+		, dt.name as tdoc,'' as factura
+		, sum(CASE WHEN (round(p.amount,3)=0 AND p.status<>'RPR') THEN psd.amount
+			WHEN (round(p.amount,3)=0 AND p.status='RPR') THEN 0
+			WHEN round(psd.amount,3)<round(p.amount,3)  THEN psd.amount
+			ELSE p.amount
+		END) as total
+		, true as cd
+		, 'OTROS COBROS Y ANTICIPOS' as grupo
+		, 3 as cgrupo
+		, 'Total  Otros Cobros' as texto
+	FROM FIN_Payment p
+		left Join c_bpartner bp on bp.c_bpartner_id = p.c_bpartner_id
+		left Join FIN_Paymentmethod pm on pm.FIN_Paymentmethod_ID = p.FIN_Paymentmethod_ID
+		left Join C_DocType dt on dt.C_DocType_id = p.C_DocType_id
+		left join fin_payment_detail pd on p.FIN_Payment_id=pd.FIN_Payment_id
+		left join fin_payment_scheduledetail psd on pd.fin_payment_detail_id=psd.fin_payment_detail_id
+		left join FIN_Payment_Schedule ps on psd.fin_payment_schedule_invoice=ps.fin_payment_schedule_id
+		left join c_invoice ci on ci.c_invoice_id=ps.c_invoice_id
+		left Join c_invoice cir on cir.c_invoice_id = ci.em_scnr_invoice_id
+		inner join ad_org org on org.ad_org_id=p.ad_org_id
+		inner join Sccc_Setup ss on ss.ad_org_id=p.ad_org_id
+		inner join Ssccso_Type_Of_Document sd on sd.Sccc_Setup_ID = ss.Sccc_Setup_ID AND dt.C_DocType_id=sd.C_DocType_id
+		inner join sccc_cash_clousure cc on cc.Sccc_Setup_ID=ss.Sccc_Setup_ID
+	WHERE  (ci.c_invoice_id is null AND cir.c_invoice_id is null)
+		AND P.STATUS<>'RPVOID' AND  P.STATUS<>'RPAP'
+		AND round(p.generated_credit,4)>0 AND p.paymentdate=cc.Closingdate::date
+		AND TO_CHAR(p.paymentdate,'dd/MM/yyyy')=?
+		AND sccc_cash_clousure_ID=? 
+	GROUP BY fechat,doc,cliente,caja,mpago,tdoc ) x  
+	GROUP BY fechat,doc,cliente,caja,mpago,tdoc,cd,grupo,cgrupo,texto ) x
+
+      ]]>
+    </Sql>
+    <!-- <Parameter name="adOrgId"/> -->
+    <Parameter name="noDoc"/>
+    <Parameter name="noDoc2"/>
+    <Parameter name="noDoc3"/>
+    <Parameter name="noDoc4"/>
+    <Parameter name="noDoc5"/>
+    <Parameter name="noDoc6"/>
+  </SqlMethod>
+
+</SqlClass>

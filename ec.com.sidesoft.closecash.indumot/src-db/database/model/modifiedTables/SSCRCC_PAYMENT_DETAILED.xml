@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+  <database name="MODIFIED TABLE SSCRCC_PAYMENT_DETAILED">
+    <table name="SSCRCC_PAYMENT_DETAILED" primaryKey="SSCRCC_PAYMENT_DETAILED_KEY">
+      <column name="EM_SSCCCIN_DEPOSIT" primaryKey="false" required="false" type="CLOB" size="4000" autoIncrement="false">
+        <default/>
+        <onCreateDefault/>
+      </column>
+    </table>
+  </database>

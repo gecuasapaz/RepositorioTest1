@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<compiereTrl baseLanguage="en_US" language="es_ES" table="AD_REFERENCE" version="">
+  <row id="21116B8746344D4FB60B63A830AD8959" trl="N">
+    <value column="Name" isTrl="N" original="SscccinToggleDocstatus">SscccinToggleDocstatus</value>
+    <value column="Description" isTrl="N" original=""/>
+    <value column="Help" isTrl="N" original=""/>
+  </row>
+  <row id="99DE98929CE74729B29FAD4B6634792F" trl="N">
+    <value column="Name" isTrl="N" original="CloseCash_docstatus">CloseCash_docstatus</value>
+    <value column="Description" isTrl="N" original="">lista de Estados de Documento</value>
+    <value column="Help" isTrl="N" original=""/>
+  </row>
+</compiereTrl>

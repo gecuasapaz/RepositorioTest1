@@ -1,0 +1,52 @@
+<?xml version="1.0"?>
+  <database name="FUNCTION SSCCCIN_UPDATE_REFERENCE">
+    <function name="SSCCCIN_UPDATE_REFERENCE" type="VARCHAR">
+      <parameter name="vcashclosureid" type="VARCHAR" mode="in">
+        <default/>
+      </parameter>
+      <parameter name="vreference" type="VARCHAR" mode="in">
+        <default/>
+      </parameter>
+      <body><![CDATA[vRecord RECORD;
+BEGIN
+	BEGIN
+		
+		--Actualizamos la referencia en los cobros de tipo cheque y efectivo
+		FOR vRecord IN (
+			SELECT ccl.*, pm.em_scca_type_payment, cc.sccc_setup_id,em_sscccin_reference as newreference
+			FROM sccc_cash_clousureline AS ccl
+				JOIN sccc_cash_clousure AS cc ON cc.sccc_cash_clousure_id=ccl.sccc_cash_clousure_id
+				JOIN fin_paymentmethod AS pm ON pm.fin_paymentmethod_id=ccl.fin_paymentmethod_id
+				JOIN fin_finacc_transaction AS ft ON ft.em_sccc_cash_clousure_id=ccl.sccc_cash_clousure_id
+				AND ft.depositamt=ccl.amount
+			WHERE ccl.sccc_cash_clousure_id=vCashClosureid 
+				AND pm.em_scca_type_payment IN ('CH','SH')
+		) LOOP
+			UPDATE fin_payment AS p SET referenceno=vRecord.newreference
+			FROM fin_paymentmethod AS pm
+				JOIN sccc_cash_clousureline AS ccl ON ccl.fin_paymentmethod_id=pm.fin_paymentmethod_id
+				JOIN sccc_cash_clousure AS cc ON cc.sccc_cash_clousure_id=ccl.sccc_cash_clousure_id
+				LEFT JOIN sscrcc_payment_detailed AS pd ON pd.sccc_cash_clousureline_id=ccl.sccc_cash_clousureline_id
+			WHERE pm.fin_paymentmethod_id=p.fin_paymentmethod_id
+				AND pm.em_scca_type_payment=vRecord.em_scca_type_payment
+				AND p.status='RDNC'
+				AND p.paymentdate::DATE=cc.closingdate::DATE
+				AND cc.sccc_cash_clousure_id=vCashClosureId
+				AND p.c_doctype_id IN (
+					SELECT c_doctype_id
+					FROM ssccso_type_of_document
+					WHERE sccc_setup_id=vRecord.sccc_setup_id
+				);
+		END LOOP;
+		
+		RETURN 'OK';
+    
+	END;
+	
+	EXCEPTION
+	WHEN OTHERS THEN
+    RETURN SQLERRM;
+END SSCCCIN_UPDATE_REFERENCE
+]]></body>
+    </function>
+  </database>

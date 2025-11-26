@@ -1,0 +1,79 @@
+<?xml version="1.0"?>
+  <database name="FUNCTION SSCCCFA_FIN_ACC_CONCEPT">
+    <function name="SSCCCFA_FIN_ACC_CONCEPT" type="NULL">
+      <parameter name="p_sccc_setup_id" type="VARCHAR" mode="in">
+        <default/>
+      </parameter>
+      <parameter name="p_sccc_cash_clousure_id" type="VARCHAR" mode="in">
+        <default/>
+      </parameter>
+      <parameter name="p_closingdate" type="VARCHAR" mode="in">
+        <default/>
+      </parameter>
+      <body><![CDATA[actualcost NUMBER;
+v_C_Glitem_id  VARCHAR2(32);
+v_FIN_PaymentMethod_id  VARCHAR2(32);
+
+
+vCashClosureLine RECORD;
+vTransaction RECORD;
+vSetup RECORD;
+
+BEGIN
+
+	-- por cada linea creada aplicar el valor de transacciones de la cuenta financiera sin relacion a cobros
+		SELECT *
+		INTO vSetup
+		FROM sccc_setup
+		WHERE sccc_setup_id=p_sccc_setup_id;
+
+		FOR vCashClosureLine IN (
+			SELECT	*     
+			FROM sccc_cash_clousureline 
+			WHERE sccc_cash_clousure_id = p_sccc_cash_clousure_id
+      	) LOOP
+
+	  	-- Determinar la cuenta financiera aplicando filtros de metodo de pago por linea de cierre de caja
+			FOR vTransaction IN (
+				SELECT ft.Depositamt , ft.Paymentamt, ft.C_Glitem_id 
+				FROM FIN_Finacc_Transaction ft 
+				JOIN sccc_setup st on st.FIN_Financial_Account_ID = ft.FIN_Financial_Account_ID
+				JOIN FIN_Financial_Account fac on fac.FIN_Financial_Account_ID = st.FIN_Financial_Account_ID
+				-- JOIN  FIN_FinAcc_PaymentMethod fpm on fpm.FIN_Financial_Account_ID =fac.FIN_Financial_Account_ID 
+				AND st.FIN_Financial_Account_ID = vSetup.FIN_Financial_Account_ID
+				WHERE st.sccc_setup_id= p_sccc_setup_id
+				AND fin_payment_id is null
+				AND ft.DateAcct = p_closingdate::DATE 
+				-- AND fpm.FIN_PaymentMethod_id in ( vCashClosureLine.FIN_Paymentmethod_ID )
+			) LOOP
+				IF( vTransaction.C_Glitem_id is not null  ) THEN
+					-- Determinar si el concepto contable de la transaccion esta configurado en la conf del cierre de caja 
+					SELECT COALESCE(C_Glitem_id , '--') , COALESCE(FIN_PaymentMethod_id, '--')
+					INTO v_C_Glitem_id , v_FIN_PaymentMethod_id
+					FROM sscccfa_fin_acc_concept
+					WHERE sccc_setup_id= p_sccc_setup_id
+					AND C_Glitem_id = vTransaction.C_Glitem_id
+					AND FIN_PaymentMethod_id = vCashClosureLine.FIN_PaymentMethod_id ;
+
+					IF( (v_C_Glitem_id is not null OR v_C_Glitem_id != '--' ) AND v_FIN_PaymentMethod_id = vCashClosureLine.FIN_PaymentMethod_id ) THEN 
+						IF( vTransaction.Depositamt > 0)  THEN
+							UPDATE sccc_cash_clousureline SET amount = amount + vTransaction.Depositamt 
+							WHERE sccc_cash_clousureline_id = vCashClosureLine.sccc_cash_clousureline_id;
+
+						END IF;
+
+						IF( vTransaction.Paymentamt > 0)  THEN
+							UPDATE sccc_cash_clousureline SET amount = amount - vTransaction.Paymentamt
+							WHERE sccc_cash_clousureline_id = vCashClosureLine.sccc_cash_clousureline_id;
+
+						END IF;
+					END IF;
+
+				END IF;			
+			END LOOP; 
+
+	  END LOOP;
+END SSCCCFA_FIN_ACC_CONCEPT
+]]></body>
+    </function>
+  </database>

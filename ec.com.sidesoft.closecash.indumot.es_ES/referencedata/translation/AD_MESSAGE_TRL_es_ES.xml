@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<compiereTrl baseLanguage="en_US" language="es_ES" table="AD_MESSAGE" version="">
+  <row id="10F55D30F55C4BABB839A6D0FC53861E" trl="Y">
+    <value column="MsgText" isTrl="Y" original="Reference Number Required">Número de Referencia Requerido</value>
+    <value column="MsgTip" isTrl="N" original=""/>
+  </row>
+  <row id="27A6ED77271248DBA0F5E02FE207F9B0" trl="Y">
+    <value column="MsgText" isTrl="Y" original="Only 1 box closure per day is allowed">Solo se permite 1 cierre de caja por dia</value>
+    <value column="MsgTip" isTrl="N" original=""/>
+  </row>
+  <row id="2C5AC7550E614F52A22B8FD096CCF318" trl="Y">
+    <value column="MsgText" isTrl="Y" original="It is not allowed to process a Cash Closing with a processing date less than the Closing Date.">No se permite procesar un Cierre de Caja con Fecha de proceso menor a la Fecha del cierre</value>
+    <value column="MsgTip" isTrl="N" original=""/>
+  </row>
+  <row id="58D2BCE27AAE4E16AAA299FFB80E8EB1" trl="Y">
+    <value column="MsgText" isTrl="Y" original="Document types for unconfigured invoices">Tipos de documento para facturas no configurados</value>
+    <value column="MsgTip" isTrl="N" original=""/>
+  </row>
+  <row id="669B353778814686B054AD14718471FF" trl="Y">
+    <value column="MsgText" isTrl="Y" original="Document types not configured">Tipos de documento no configurados</value>
+    <value column="MsgTip" isTrl="N" original=""/>
+  </row>
+  <row id="B095BE010FDF4D8B94BE8BE95AE70DF2" trl="Y">
+    <value column="MsgText" isTrl="Y" original="The reference number has already been used in the selected financial account">El número de referencia ya fue usado en la cuenta financiera seleccionada</value>
+    <value column="MsgTip" isTrl="N" original=""/>
+  </row>
+  <row id="EDF01831DB6647FEB6A7A8AB47938184" trl="Y">
+    <value column="MsgText" isTrl="Y" original="Processed Cash Closing. Operation not allowed.">Cierre de Caja Procesado. Operacion no permitida.</value>
+    <value column="MsgTip" isTrl="N" original=""/>
+  </row>
+  <row id="F304DCA6799042508D79542AEA7C834B" trl="Y">
+    <value column="MsgText" isTrl="Y" original="Payment methods not configured">Métodos de cobro no configurados</value>
+    <value column="MsgTip" isTrl="N" original=""/>
+  </row>
+</compiereTrl>

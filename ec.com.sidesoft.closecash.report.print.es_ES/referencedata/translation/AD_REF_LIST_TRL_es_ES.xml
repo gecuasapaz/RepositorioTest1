@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<compiereTrl baseLanguage="en_US" language="es_ES" table="AD_REF_LIST" version="">
+  <row id="351E3BA2F37E4891967AB66785C04973" trl="Y">
+    <value column="Name" isTrl="Y" original="Cash">Contado</value>
+    <value column="Description" isTrl="N" original=""/>
+  </row>
+  <row id="A6020AE743864DB1B2B06D7CF4D424F3" trl="Y">
+    <value column="Name" isTrl="Y" original="Credit">Crédito</value>
+    <value column="Description" isTrl="N" original=""/>
+  </row>
+  <row id="C21F001979EC43AF80ED85672F2D7A01" trl="Y">
+    <value column="Name" isTrl="Y" original="Special Credit">Crédito Especial</value>
+    <value column="Description" isTrl="N" original=""/>
+  </row>
+</compiereTrl>

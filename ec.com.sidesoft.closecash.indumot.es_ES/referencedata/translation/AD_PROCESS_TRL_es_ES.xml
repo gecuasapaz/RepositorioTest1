@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<compiereTrl baseLanguage="en_US" language="es_ES" table="AD_PROCESS" version="">
+  <row id="5BA898DDB64D455D8656C0F60E445E43" trl="Y">
+    <value column="Name" isTrl="Y" original="Toggle Document Status">Alternar Estado de Documento</value>
+    <value column="Description" isTrl="N" original=""/>
+    <value column="Help" isTrl="N" original=""/>
+  </row>
+  <row id="C3E415F0DCDC4792AAC46C6F74883190" trl="Y">
+    <value column="Name" isTrl="Y" original="Record">Registrar Cierre de Caja</value>
+    <value column="Description" isTrl="Y" original="Record">Registrar Cierre de Caja</value>
+    <value column="Help" isTrl="N" original=""/>
+  </row>
+  <row id="D4A48C4B587C4555B8D2293C1B7FB218" trl="Y">
+    <value column="Name" isTrl="Y" original="Load Lines">Cargar Lineas Cierre de Caja</value>
+    <value column="Description" isTrl="Y" original="Load Lines">Cargar Lineas Cierre de Caja</value>
+    <value column="Help" isTrl="N" original=""/>
+  </row>
+  <row id="E0A5E2AF4A0143E1A282DDF8E6C20C0D" trl="Y">
+    <value column="Name" isTrl="Y" original="Process">Procesar Cierre de Caja</value>
+    <value column="Description" isTrl="Y" original="Process">Procesar Cierre de Caja</value>
+    <value column="Help" isTrl="N" original=""/>
+  </row>
+</compiereTrl>

@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+  <database name="TRIGGER SSCCCIN_CASH_DELET_TRG">
+    <trigger name="SSCCCIN_CASH_DELET_TRG" table="SCCC_CASH_CLOUSURE" fires="before" insert="false" update="false" delete="true" foreach="row">
+      <body><![CDATA[	vCheck NUMBER;
+ 	v_cashclousure varchar(32);
+	v_status varchar(32);
+    BEGIN
+
+		IF DELETING THEN
+		select sccc_cash_clousure_id,docstatus into v_cashclousure,v_status
+			from sccc_cash_clousure
+			where sccc_cash_clousure_id=:OLD.sccc_cash_clousure_id;
+		SELECT COUNT(*) INTO vCheck
+			FROM sccc_cash_clousure
+			WHERE sccc_cash_clousure_id=v_cashclousure;
+				IF vCheck>0 THEN
+					RAISE_APPLICATION_ERROR(-20000, 'No se puede eliminar la cabecera.');
+			END IF;
+		END IF;
+	RETURN OLD;
+END SSCCCIN_CASH_DELET_TRG
+]]></body>
+    </trigger>
+  </database>

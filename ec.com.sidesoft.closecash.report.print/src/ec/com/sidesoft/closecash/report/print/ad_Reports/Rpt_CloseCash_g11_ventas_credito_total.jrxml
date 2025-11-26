@@ -1,0 +1,260 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="Rpt_CloseCash" pageWidth="567" pageHeight="814" whenNoDataType="BlankPage" columnWidth="567" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" isSummaryWithPageHeaderAndFooter="true" uuid="cfaf7223-c06e-4591-8e0f-b406a2336150">
+	<property name="ireport.zoom" value="2.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<property name="net.sf.jasperreports.export.xls.detect.cell.type" value="true"/>
+	<parameter name="NUMBERFORMAT" class="java.text.DecimalFormat" isForPrompting="false">
+		<defaultValueExpression><![CDATA[new DecimalFormat("###,##0.00;-###,##0.00", new DecimalFormatSymbols())]]></defaultValueExpression>
+	</parameter>
+	<parameter name="NUMBERDECIMAL" class="java.lang.Integer" isForPrompting="false">
+		<defaultValueExpression><![CDATA[2]]></defaultValueExpression>
+	</parameter>
+	<parameter name="DOCUMENT_ID" class="java.lang.String">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="BASE_WEB" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="SOURCE_PATH" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="SUBREPORT_DIR" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="AD_USER_ID" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA["100"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="SETUP_ID" class="java.lang.String">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="fecha_c" class="java.lang.String">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<queryString>
+		<![CDATA[--SEPARACION Ventas Crédito g11
+SELECT TO_CHAR(ci.dateinvoiced,'dd/MM/yyyy') as fecha_t
+, '' as c_usuario
+, '' as doc
+, '' as cliente
+, concat(split_part( dt.name, '-', 1),'-',split_part( dt.name, '-', 2),'-',split_part( dt.name, '-', 3)) as m_pago
+, '' as t_doc
+, '' as factura
+, sum(ci.grandtotal) as total
+, false as cd
+, 'Ventas Crédito' as grupo
+, 11 as c_grupo
+, 'Subtotal' as texto
+FROM c_invoice ci
+LEFT JOIN c_bpartner bp on bp.c_bpartner_id = ci.c_bpartner_id
+LEFT JOIN C_DocType dt on dt.C_DocType_id = ci.C_DocType_id
+LEFT JOIN FIN_Paymentmethod pm on pm.FIN_Paymentmethod_ID = ci.FIN_Paymentmethod_ID
+LEFT JOIN C_PaymentTerm pt on pt.C_PaymentTerm_id = ci.C_PaymentTerm_id
+JOIN ( SELECT sd.C_Doctype_Credit_Notes_ID as C_DocType_id,ss.Sccc_Setup_ID
+FROM Sccc_Setup ss
+JOIN sscccin_invoice_doctype sd on sd.Sccc_Setup_ID=ss.Sccc_Setup_ID
+GROUP BY 1,2
+UNION
+SELECT sd.C_Doctype_Sales_ID as C_DocType_id,ss.Sccc_Setup_ID
+FROM Sccc_Setup ss
+JOIN sscccin_invoice_doctype sd on sd.Sccc_Setup_ID=ss.Sccc_Setup_ID
+GROUP BY 1,2
+) dc on dc.C_DocType_id=dt.C_DocType_id AND dc.Sccc_Setup_ID=$P{SETUP_ID}
+WHERE ((coalesce(pt.em_ssccrpp_paymenttype,'')<>'CONT' AND round(OutstandingAmt,3)>=0)
+OR (coalesce(pt.em_ssccrpp_paymenttype,'') in ('CRES','CONT') AND pt.em_ssccrpp_upon_delivery ='Y'))
+AND ci.IsSOTrx='Y'
+AND TO_CHAR(ci.dateinvoiced,'dd/MM/yyyy') = $P{fecha_c}
+GROUP BY fecha_t,m_pago
+ORDER BY m_pago]]>
+	</queryString>
+	<field name="fecha_t" class="java.lang.String"/>
+	<field name="c_usuario" class="java.lang.String"/>
+	<field name="doc" class="java.lang.String"/>
+	<field name="cliente" class="java.lang.String"/>
+	<field name="m_pago" class="java.lang.String"/>
+	<field name="t_doc" class="java.lang.String"/>
+	<field name="factura" class="java.lang.String"/>
+	<field name="total" class="java.math.BigDecimal"/>
+	<field name="cd" class="java.lang.Boolean"/>
+	<field name="grupo" class="java.lang.String"/>
+	<field name="c_grupo" class="java.lang.Integer"/>
+	<field name="texto" class="java.lang.String"/>
+	<variable name="REPORT_PAGE" class="java.lang.Integer" resetType="None" incrementType="Page">
+		<variableExpression><![CDATA[$V{PAGE_NUMBER}]]></variableExpression>
+	</variable>
+	<variable name="subtotal_g" class="java.math.BigDecimal" resetType="Group" resetGroup="Transacction" calculation="Sum">
+		<variableExpression><![CDATA[$F{total}]]></variableExpression>
+	</variable>
+	<variable name="total_vc" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[( $F{c_grupo}==1? $F{total} : 0 )]]></variableExpression>
+	</variable>
+	<variable name="total_cc" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[( $F{c_grupo}==2? $F{total} : 0 )]]></variableExpression>
+	</variable>
+	<variable name="total_oc" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[( $F{c_grupo}==3? $F{total} : 0 )]]></variableExpression>
+	</variable>
+	<variable name="total_rc" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[( $F{c_grupo}==4? $F{total} : 0 )]]></variableExpression>
+	</variable>
+	<variable name="total_ie" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[( $F{c_grupo}==4? $F{total} : 0 )]]></variableExpression>
+	</variable>
+	<variable name="total_vcr" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[( $F{c_grupo}==2? $F{total} : 0 )]]></variableExpression>
+	</variable>
+	<variable name="total_credito_contado" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[( $F{c_grupo}==12? $F{total} : 0 )]]></variableExpression>
+	</variable>
+	<variable name="total_ccr" class="java.math.BigDecimal" calculation="Sum"/>
+	<variable name="total_rcr" class="java.math.BigDecimal" calculation="Sum"/>
+	<variable name="efectivo" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[( $F{m_pago}.toUpperCase().contains("EFECTIVO") && ($F{c_grupo}==2 || $F{c_grupo}==3 || $F{c_grupo}==4)? $F{total} : 0 )]]></variableExpression>
+	</variable>
+	<variable name="cheque" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[( $F{m_pago}.toUpperCase().contains("CHEQUE") && ($F{c_grupo}==2 || $F{c_grupo}==3 || $F{c_grupo}==4)? $F{total} : 0 )]]></variableExpression>
+	</variable>
+	<variable name="tarjeta" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[( $F{m_pago}.toUpperCase().contains("TARJETA") && ($F{c_grupo}==2||$F{c_grupo}==3 || $F{c_grupo}==4)? $F{total} : 0 )]]></variableExpression>
+	</variable>
+	<variable name="transferencia" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[( $F{m_pago}.toUpperCase().contains("TRANSFERENCIA") && ($F{c_grupo}==2 ||$F{c_grupo}==3 || $F{c_grupo}==4)? $F{total} : 0 )]]></variableExpression>
+	</variable>
+	<variable name="deposito" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[(($F{m_pago}.toUpperCase().contains("DEPÓSITO")) && ($F{c_grupo}==2 || $F{c_grupo}==3 || $F{c_grupo}==4)? $F{total} : 0 )]]></variableExpression>
+	</variable>
+	<group name="Transacction">
+		<groupExpression><![CDATA[$F{c_grupo}]]></groupExpression>
+		<groupHeader>
+			<band height="16">
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement x="0" y="1" width="360" height="15" isRemoveLineWhenBlank="true" uuid="03cc39dd-8453-416c-8379-ccd19a01e400">
+						<printWhenExpression><![CDATA[$F{c_grupo}<10]]></printWhenExpression>
+					</reportElement>
+					<box leftPadding="3">
+						<topPen lineWidth="0.0"/>
+					</box>
+					<textElement verticalAlignment="Middle">
+						<font size="10" isBold="true"/>
+					</textElement>
+				</textField>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement x="360" y="1" width="207" height="15" isRemoveLineWhenBlank="true" uuid="8d484568-2076-49ca-ba2b-fb44b61334c1">
+						<printWhenExpression><![CDATA[$F{c_grupo}>9&&$F{c_grupo}<12]]></printWhenExpression>
+					</reportElement>
+					<box leftPadding="3">
+						<topPen lineWidth="0.0"/>
+					</box>
+					<textElement verticalAlignment="Middle">
+						<font size="10" isBold="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{grupo}]]></textFieldExpression>
+				</textField>
+			</band>
+		</groupHeader>
+		<groupFooter>
+			<band height="15">
+				<textField isBlankWhenNull="true">
+					<reportElement key="staticText-12" x="0" y="0" width="500" height="15" isRemoveLineWhenBlank="true" uuid="b518e68b-10e2-4e18-97cd-16cb0080789d">
+						<printWhenExpression><![CDATA[!($F{c_grupo}.equals(new Integer(8))|| $F{c_grupo}.equals(new Integer(12))||$F{c_grupo}.equals(new Integer(20)))]]></printWhenExpression>
+					</reportElement>
+					<box rightPadding="5"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle" markup="none">
+						<font size="8" isBold="true" pdfFontName="Helvetica"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{texto}]]></textFieldExpression>
+				</textField>
+				<textField isBlankWhenNull="true">
+					<reportElement x="500" y="0" width="67" height="15" isRemoveLineWhenBlank="true" forecolor="#010101" uuid="a29d85e3-195c-4a1c-9cad-4fd3427b4c9e">
+						<printWhenExpression><![CDATA[!($F{c_grupo}.equals(new Integer(8))|| $F{c_grupo}.equals(new Integer(12))||$F{c_grupo}.equals(new Integer(20)))]]></printWhenExpression>
+					</reportElement>
+					<box rightPadding="3">
+						<topPen lineWidth="0.75"/>
+					</box>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
+						<font size="8" isBold="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$V{subtotal_g}]]></textFieldExpression>
+					<patternExpression><![CDATA[$P{NUMBERFORMAT}.toPattern()]]></patternExpression>
+				</textField>
+			</band>
+		</groupFooter>
+	</group>
+	<pageHeader>
+		<band splitType="Stretch"/>
+	</pageHeader>
+	<detail>
+		<band height="11">
+			<textField isStretchWithOverflow="true" pattern="" isBlankWhenNull="true">
+				<reportElement x="185" y="0" width="175" height="11" isPrintWhenDetailOverflows="true" forecolor="#010101" uuid="b4c5e51d-7b6a-4b27-b80d-a712347dd084"/>
+				<box leftPadding="3" rightPadding="3">
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+				<textElement verticalAlignment="Middle">
+					<font size="7"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{cliente}]]></textFieldExpression>
+				<patternExpression><![CDATA[$P{NUMBERFORMAT}.toPattern()]]></patternExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="104" y="0" width="81" height="11" isPrintWhenDetailOverflows="true" forecolor="#010101" uuid="05674839-af17-4738-8ee1-d1c16148b61d"/>
+				<box leftPadding="3" rightPadding="3">
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font size="7"/>
+				</textElement>
+				<textFieldExpression><![CDATA[($F{c_grupo}.equals(new Integer(9)))?$F{t_doc}:$F{doc}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="360" y="0" width="140" height="11" isRemoveLineWhenBlank="true" isPrintWhenDetailOverflows="true" forecolor="#010101" uuid="358aa113-2256-46b9-a771-45682ad0b831">
+					<printWhenExpression><![CDATA[$F{c_grupo}<12]]></printWhenExpression>
+				</reportElement>
+				<box leftPadding="3" rightPadding="3">
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font size="7"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{m_pago}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="500" y="0" width="67" height="11" isRemoveLineWhenBlank="true" isPrintWhenDetailOverflows="true" forecolor="#010101" uuid="9e31a365-2bad-4ba8-a1e6-fa78e2e6f9a2">
+					<printWhenExpression><![CDATA[$F{c_grupo}<12]]></printWhenExpression>
+				</reportElement>
+				<box leftPadding="3" rightPadding="3">
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="7"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{total}]]></textFieldExpression>
+				<patternExpression><![CDATA[$P{NUMBERFORMAT}.toPattern()]]></patternExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="0" y="0" width="104" height="11" isPrintWhenDetailOverflows="true" forecolor="#010101" uuid="7b7cccbf-c056-42fd-af53-0babe881bc3a"/>
+				<box leftPadding="3" rightPadding="3">
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font size="7"/>
+				</textElement>
+				<textFieldExpression><![CDATA[($F{c_grupo}.equals(new Integer(9)))?$F{doc}:$F{t_doc}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<columnFooter>
+		<band/>
+	</columnFooter>
+</jasperReport>

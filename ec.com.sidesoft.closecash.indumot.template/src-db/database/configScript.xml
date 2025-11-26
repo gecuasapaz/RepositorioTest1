@@ -1,0 +1,264 @@
+<?xml version="1.0"?>
+  <vector>
+    <versionInfo version="3.0.33196"/>
+    <removeTriggerChange triggerName="SCCC_DOCTYPE_NOT_NULL_TRG"/>
+    <columnSizeChange tablename="FIN_FINACC_TRANSACTION" columnname="DESCRIPTION" newSize="4000" oldSize="255"/>
+    <columnSizeChange tablename="SCCC_CASH_CLOUSURELINE" columnname="DESCRIPTION" newSize="4000" oldSize="100"/>
+    <columnRequiredChange tableName="SCCC_PAYMENT_METHOD" columnName="FIN_FINANCIAL_ACCOUNT_ID">
+      <required>false</required>
+    </columnRequiredChange>
+    <columnDataChange tablename="AD_AUXILIARINPUT" columnname="CODE" pkRow="C8F14B43DFF24AE191340FA801C00EB3">
+      <oldValue><![CDATA[@SQL=Select case when count(*)> 0 Then 'Y' else 'N'End 
+From sccc_cash_clousureline ccl
+	Join sccc_cash_clousure cc on cc.sccc_cash_clousure_id = ccl.sccc_cash_clousure_id
+	join sccc_setup st on st.ad_org_id = cc.ad_org_id
+	join sccc_payment_method pm on st.sccc_setup_id = pm.sccc_setup_id
+Where  pm.em_sscrcc_detailed = 'Y'
+	And pm.fin_paymentmethod_id = @fin_paymentmethod_id@
+	And ccl.sccc_cash_clousure_id = @sccc_cash_clousure_id@]]></oldValue>
+      <newValue><![CDATA[@SQL=SELECT COALESCE(pm.em_sscrcc_detailed,'N')
+FROM sccc_cash_clousureline AS ccl
+	JOIN sccc_cash_clousure AS cc ON cc.sccc_cash_clousure_id=ccl.sccc_cash_clousure_id
+	JOIN sccc_payment_method AS pm ON (pm.sccc_setup_id=cc.sccc_setup_id AND pm.fin_paymentmethod_id=ccl.fin_paymentmethod_id)
+WHERE ccl.sccc_cash_clousureline_id=@Sccc_Cash_Clousureline_ID@
+	AND ccl.fin_paymentmethod_id=@FIN_Paymentmethod_ID@]]></newValue>
+    </columnDataChange>
+    <columnDataChange tablename="AD_AUXILIARINPUT" columnname="CODE" pkRow="E65FCAECBE6D43D2913BAE29C75257CF">
+      <oldValue><![CDATA[@SQL=Select case when count(*)> 0 Then 'Y' else 'N'End 
+From sccc_cash_clousureline ccl
+	Join sccc_cash_clousure cc on cc.sccc_cash_clousure_id = ccl.sccc_cash_clousure_id
+	join sccc_setup st on st.ad_org_id = cc.ad_org_id
+	join sccc_payment_method pm on st.sccc_setup_id = pm.sccc_setup_id
+Where  pm.em_sscrcc_detailed = 'Y'
+	And pm.fin_paymentmethod_id = @fin_paymentmethod_id@
+	And ccl.sccc_cash_clousure_id = @sccc_cash_clousure_id@]]></oldValue>
+      <newValue><![CDATA[@SQL=SELECT COALESCE(pm.em_sscrcc_detailed,'N')
+FROM sccc_cash_clousureline AS ccl
+	JOIN sccc_cash_clousure AS cc ON cc.sccc_cash_clousure_id=ccl.sccc_cash_clousure_id
+	JOIN sccc_payment_method AS pm ON (pm.sccc_setup_id=cc.sccc_setup_id AND pm.fin_paymentmethod_id=ccl.fin_paymentmethod_id)
+WHERE ccl.sccc_cash_clousureline_id=@Sccc_Cash_Clousureline_ID@
+	AND ccl.fin_paymentmethod_id=@FIN_Paymentmethod_ID@]]></newValue>
+    </columnDataChange>
+    <columnDataChange tablename="AD_REF_LIST" columnname="ISACTIVE" pkRow="20C076B9CE1B452F9C007AE0E3DA0E9E">
+      <oldValue><![CDATA[Y]]></oldValue>
+      <newValue><![CDATA[N]]></newValue>
+    </columnDataChange>
+    <columnDataChange tablename="AD_REF_LIST" columnname="ISACTIVE" pkRow="EBFB9BD4ED874F2E9CD9C3D0DF7A8EAE">
+      <oldValue><![CDATA[Y]]></oldValue>
+      <newValue><![CDATA[N]]></newValue>
+    </columnDataChange>
+    <columnDataChange tablename="AD_COLUMN" columnname="AD_PROCESS_ID" pkRow="051DF8EF955040A990592814A9E3E825">
+      <oldValue><![CDATA[73BC310415EA4DD0A9CB84D84CEF5E52]]></oldValue>
+      <newValue><![CDATA[C3E415F0DCDC4792AAC46C6F74883190]]></newValue>
+    </columnDataChange>
+    <columnDataChange tablename="AD_COLUMN" columnname="AD_PROCESS_ID" pkRow="083F96134666417FBE7F19A02B4EE161">
+      <oldValue><![CDATA[53D4CF8974724C9B92780120C6EAD0A0]]></oldValue>
+      <newValue><![CDATA[D4A48C4B587C4555B8D2293C1B7FB218]]></newValue>
+    </columnDataChange>
+    <columnDataChange tablename="AD_COLUMN" columnname="READONLYLOGIC" pkRow="17A28DEAECBF4D40A5DA63A2DCCEF88D">
+      <oldValue><![CDATA[@DocStatus@='SCCC_PR' | (@DocStatus@='SCCC_RG' & @Scca_Cashier@='Y' & @Scca_Admin@='N')]]></oldValue>
+      <newValue><![CDATA[@DocStatus@='SCCC_PR' | (@SSCCCIN_ClosureCash@='Y' & @DocStatus@='SCCC_RG') | (@SSCCCIN_PaymentType@!'SH' & @SSCCCIN_PaymentType@!'CH' & @SSCCCIN_PaymentType@!'WH')]]></newValue>
+    </columnDataChange>
+    <columnDataChange tablename="AD_COLUMN" columnname="READONLYLOGIC" pkRow="338867D1FAA9499F805A5C90AF791EAE">
+      <oldValue><![CDATA[@Sscrcc_DocStatus@='SCCC_PR']]></oldValue>
+      <newValue><![CDATA[@DocStatus@='SCCC_PR' | @SSCCCIN_PaymentType@='SSCCCIN_D' | @SSCCCIN_PaymentType@='SSCCCIN_T']]></newValue>
+    </columnDataChange>
+    <columnDataChange tablename="AD_COLUMN" columnname="ISMANDATORY" pkRow="37672A189E7D4515BE6C4C929D12A05C">
+      <oldValue><![CDATA[Y]]></oldValue>
+      <newValue><![CDATA[N]]></newValue>
+    </columnDataChange>
+    <columnDataChange tablename="AD_COLUMN" columnname="READONLYLOGIC" pkRow="40F03FCC519E4CA2A26399083EB51831">
+      <oldValue><![CDATA[@Sscrcc_DocStatus@='SCCC_PR']]></oldValue>
+      <newValue><![CDATA[@DocStatus@='SCCC_PR' | @SSCCCIN_PaymentType@='SSCCCIN_D' | @SSCCCIN_PaymentType@='SSCCCIN_T']]></newValue>
+    </columnDataChange>
+    <columnDataChange tablename="AD_COLUMN" columnname="READONLYLOGIC" pkRow="54B0E3D7677B4065AF47A0A209934E3F">
+      <oldValue><![CDATA[@DocStatus@='SCCC_PR' | (@DocStatus@='SCCC_RG' & @Scca_Cashier@='Y' & @Scca_Admin@='N')]]></oldValue>
+      <newValue><![CDATA[@DocStatus@='SCCC_PR' | (@SSCCCIN_ClosureCash@='Y' & @DocStatus@='SCCC_RG') | (@SSCCCIN_PaymentType@!'SH' & @SSCCCIN_PaymentType@!'CH' & @SSCCCIN_PaymentType@!'WH')]]></newValue>
+    </columnDataChange>
+    <columnDataChange tablename="AD_COLUMN" columnname="READONLYLOGIC" pkRow="556752BF5FA24510BFC59346AE3B5FE4">
+      <oldValue><![CDATA[@DocStatus@='SCCC_PR' | @DocStatus@='SCCC_RG' ]]></oldValue>
+      <newValue><![CDATA[@DocStatus@='SCCC_PR' | (@SSCCCIN_ClosureCash@='Y' & @DocStatus@='SCCC_RG') | (@SSCCCIN_PaymentType@!'SH' & @SSCCCIN_PaymentType@!'CH' & @SSCCCIN_PaymentType@!'WH')]]></newValue>
+    </columnDataChange>
+    <columnDataChange tablename="AD_COLUMN" columnname="READONLYLOGIC" pkRow="57568479970E4D249E71736D3EFB36A7">
+      <oldValue/>
+      <newValue><![CDATA[@DocStatus@='SCCC_PR' | @SSCCCIN_PaymentType@='SSCCCIN_D' | @SSCCCIN_PaymentType@='SSCCCIN_T']]></newValue>
+    </columnDataChange>
+    <columnDataChange tablename="AD_COLUMN" columnname="HELP" pkRow="75EB22297F9F47EBB135B5CE17279018">
+      <oldValue/>
+      <newValue><![CDATA[@DocStatus@='SCCC_PR' | @SSCCCIN_ClosureCash@='Y' | (@SSCCCIN_PaymentType@!'SH' & @SSCCCIN_PaymentType@!'CH' & @SSCCCIN_PaymentType@!'WH') & @DocStatus@=!'SCCC_RG']]></newValue>
+    </columnDataChange>
+    <columnDataChange tablename="AD_COLUMN" columnname="READONLYLOGIC" pkRow="75EB22297F9F47EBB135B5CE17279018">
+      <oldValue><![CDATA[@DocStatus@='SCCC_PR' | (@DocStatus@='SCCC_RG' & @Scca_Cashier@='Y' & @Scca_Admin@='N') | @EM_Sscccin_Readonly@='Y']]></oldValue>
+      <newValue/>
+    </columnDataChange>
+    <columnDataChange tablename="AD_COLUMN" columnname="READONLYLOGIC" pkRow="967B0DF56D3844B18535B0C301D59DEE">
+      <oldValue><![CDATA[@DocStatus@='SCCC_PR' | (@DocStatus@='SCCC_RG' & @Scca_Cashier@='Y' & @Scca_Admin@='N')]]></oldValue>
+      <newValue><![CDATA[@DocStatus@='SCCC_PR' | (@SSCCCIN_ClosureCash@='Y' & @DocStatus@='SCCC_RG') | (@SSCCCIN_PaymentType@!'SH' & @SSCCCIN_PaymentType@!'CH' & @SSCCCIN_PaymentType@!'WH')]]></newValue>
+    </columnDataChange>
+    <columnDataChange tablename="AD_COLUMN" columnname="READONLYLOGIC" pkRow="9E5223C7A11A49C28575F14B8D219132">
+      <oldValue/>
+      <newValue><![CDATA[@DocStatus@='SCCC_PR' | (@SSCCCIN_ClosureCash@='Y' & @DocStatus@='SCCC_RG') | (@SSCCCIN_PaymentType@!'SH' & @SSCCCIN_PaymentType@!'CH' & @SSCCCIN_PaymentType@!'WH')]]></newValue>
+    </columnDataChange>
+    <columnDataChange tablename="AD_COLUMN" columnname="READONLYLOGIC" pkRow="A06C7DFD660B4F4DA80FD111B49D555A">
+      <oldValue><![CDATA[@DocStatus@='SCCC_PR' | (@DocStatus@='SCCC_RG' & @Scca_Cashier@='Y' & @Scca_Admin@='N')]]></oldValue>
+      <newValue><![CDATA[@DocStatus@='SCCC_PR' | (@SSCCCIN_ClosureCash@='Y' & @DocStatus@='SCCC_RG') | (@SSCCCIN_PaymentType@!'SH' & @SSCCCIN_PaymentType@!'CH' & @SSCCCIN_PaymentType@!'WH')]]></newValue>
+    </columnDataChange>
+    <columnDataChange tablename="AD_COLUMN" columnname="AD_PROCESS_ID" pkRow="AFB157B8BC6A4280A5B6E75AF3B4D395">
+      <oldValue><![CDATA[5470B82CC23240498B755FC0346FB728]]></oldValue>
+      <newValue><![CDATA[E0A5E2AF4A0143E1A282DDF8E6C20C0D]]></newValue>
+    </columnDataChange>
+    <columnDataChange tablename="AD_COLUMN" columnname="AD_REFERENCE_ID" pkRow="B592E5B4A7094C229F852B9910211F6F">
+      <oldValue><![CDATA[19]]></oldValue>
+      <newValue><![CDATA[18]]></newValue>
+    </columnDataChange>
+    <columnDataChange tablename="AD_COLUMN" columnname="AD_REFERENCE_VALUE_ID" pkRow="B592E5B4A7094C229F852B9910211F6F">
+      <oldValue/>
+      <newValue><![CDATA[38CDBA2F555547D0AE3A92858B6C6225]]></newValue>
+    </columnDataChange>
+    <columnDataChange tablename="AD_COLUMN" columnname="AD_VAL_RULE_ID" pkRow="B592E5B4A7094C229F852B9910211F6F">
+      <oldValue/>
+      <newValue><![CDATA[DEC572E098AB4718A1C719AE5FF452BD]]></newValue>
+    </columnDataChange>
+    <columnDataChange tablename="AD_COLUMN" columnname="READONLYLOGIC" pkRow="B592E5B4A7094C229F852B9910211F6F">
+      <oldValue><![CDATA[@Sscrcc_DocStatus@='SCCC_PR']]></oldValue>
+      <newValue><![CDATA[@DocStatus@='SCCC_PR' | @SSCCCIN_PaymentType@='SSCCCIN_D' | @SSCCCIN_PaymentType@='SSCCCIN_T']]></newValue>
+    </columnDataChange>
+    <columnDataChange tablename="AD_COLUMN" columnname="READONLYLOGIC" pkRow="BA990B6210F145E4BC291698A8EFD88B">
+      <oldValue><![CDATA[@DocStatus@='SCCC_PR' | (@DocStatus@='SCCC_RG' & @Scca_Cashier@='Y' & @Scca_Admin@='N')]]></oldValue>
+      <newValue/>
+    </columnDataChange>
+    <columnDataChange tablename="AD_COLUMN" columnname="READONLYLOGIC" pkRow="BD3584EB636248EEAE721E5D24D1E97E">
+      <oldValue><![CDATA[@DocStatus@='SCCC_PR' | (@DocStatus@='SCCC_RG' & @Scca_Cashier@='Y' & @Scca_Admin@='N')]]></oldValue>
+      <newValue><![CDATA[@DocStatus@='SCCC_PR' | (@SSCCCIN_ClosureCash@='Y' & @DocStatus@='SCCC_RG') | (@SSCCCIN_PaymentType@!'SH' & @SSCCCIN_PaymentType@!'CH' & @SSCCCIN_PaymentType@!'WH')]]></newValue>
+    </columnDataChange>
+    <columnDataChange tablename="AD_COLUMN" columnname="ISSESSIONATTR" pkRow="BD3584EB636248EEAE721E5D24D1E97E">
+      <oldValue><![CDATA[N]]></oldValue>
+      <newValue><![CDATA[Y]]></newValue>
+    </columnDataChange>
+    <columnDataChange tablename="AD_COLUMN" columnname="READONLYLOGIC" pkRow="BFA878D8A9214DF0A70C6FE3C872FE53">
+      <oldValue><![CDATA[@DocStatus@='SCCC_PR' | (@DocStatus@='SCCC_RG' & @Scca_Cashier@='Y' & @Scca_Admin@='N')]]></oldValue>
+      <newValue><![CDATA[@DocStatus@='SCCC_PR' | (@SSCCCIN_ClosureCash@='Y' & @DocStatus@='SCCC_RG') | (@SSCCCIN_PaymentType@!'SH' & @SSCCCIN_PaymentType@!'CH' & @SSCCCIN_PaymentType@!'WH')]]></newValue>
+    </columnDataChange>
+    <columnDataChange tablename="AD_COLUMN" columnname="AD_REFERENCE_ID" pkRow="E2EF8B7AB94F4A41BE052538B58ECD97">
+      <oldValue><![CDATA[10]]></oldValue>
+      <newValue><![CDATA[14]]></newValue>
+    </columnDataChange>
+    <columnDataChange tablename="AD_COLUMN" columnname="FIELDLENGTH" pkRow="E2EF8B7AB94F4A41BE052538B58ECD97">
+      <oldValue><![CDATA[100]]></oldValue>
+      <newValue><![CDATA[1000000]]></newValue>
+    </columnDataChange>
+    <columnDataChange tablename="AD_COLUMN" columnname="READONLYLOGIC" pkRow="E2EF8B7AB94F4A41BE052538B58ECD97">
+      <oldValue><![CDATA[@DocStatus@='SCCC_PR' | (@DocStatus@='SCCC_RG' & @Scca_Cashier@='Y' & @Scca_Admin@='N')]]></oldValue>
+      <newValue><![CDATA[@DocStatus@='SCCC_PR' | (@SSCCCIN_ClosureCash@='Y' & @DocStatus@='SCCC_RG') | (@SSCCCIN_PaymentType@!'SH' & @SSCCCIN_PaymentType@!'CH' & @SSCCCIN_PaymentType@!'WH')]]></newValue>
+    </columnDataChange>
+    <columnDataChange tablename="AD_COLUMN" columnname="READONLYLOGIC" pkRow="E8EFE1E607B84D37A6E23CF129055CBD">
+      <oldValue><![CDATA[@DocStatus@='SCCC_PR' | (@DocStatus@='SCCC_RG' & @Scca_Cashier@='Y' & @Scca_Admin@='N')]]></oldValue>
+      <newValue><![CDATA[@DocStatus@='SCCC_PR' | (@SSCCCIN_PaymentType@!'SH' & @SSCCCIN_PaymentType@!'CH' & @SSCCCIN_PaymentType@!'WH')]]></newValue>
+    </columnDataChange>
+    <columnDataChange tablename="AD_COLUMN" columnname="ISSESSIONATTR" pkRow="EA67CF0FF1F74099A783A80B1AA18AB1">
+      <oldValue><![CDATA[N]]></oldValue>
+      <newValue><![CDATA[Y]]></newValue>
+    </columnDataChange>
+    <columnDataChange tablename="AD_COLUMN" columnname="AD_REFERENCE_VALUE_ID" pkRow="FC875226B10045B0B6E03449B63FABF1">
+      <oldValue><![CDATA[2AB9B1DAA33A44518482706ECCE85D71]]></oldValue>
+      <newValue><![CDATA[99DE98929CE74729B29FAD4B6634792F]]></newValue>
+    </columnDataChange>
+    <columnDataChange tablename="AD_COLUMN" columnname="ISSESSIONATTR" pkRow="FC875226B10045B0B6E03449B63FABF1">
+      <oldValue><![CDATA[N]]></oldValue>
+      <newValue><![CDATA[Y]]></newValue>
+    </columnDataChange>
+    <columnDataChange tablename="AD_FIELD" columnname="ISREADONLY" pkRow="02ECF4FD823A4FD6B038AB7C10B5486C">
+      <oldValue><![CDATA[N]]></oldValue>
+      <newValue><![CDATA[Y]]></newValue>
+    </columnDataChange>
+    <columnDataChange tablename="AD_FIELD" columnname="ISACTIVE" pkRow="13BB96024EB24219B747D74FF78E42F4">
+      <oldValue><![CDATA[Y]]></oldValue>
+      <newValue><![CDATA[N]]></newValue>
+    </columnDataChange>
+    <columnDataChange tablename="AD_FIELD" columnname="DISPLAYLENGTH" pkRow="17CA7F11E6F7411996C47812F9E2B318">
+      <oldValue><![CDATA[100]]></oldValue>
+      <newValue><![CDATA[1000000]]></newValue>
+    </columnDataChange>
+    <columnDataChange tablename="AD_FIELD" columnname="ISREADONLY" pkRow="17CA7F11E6F7411996C47812F9E2B318">
+      <oldValue><![CDATA[N]]></oldValue>
+      <newValue><![CDATA[Y]]></newValue>
+    </columnDataChange>
+    <columnDataChange tablename="AD_FIELD" columnname="ISREADONLY" pkRow="1C69440E52B140D8916FFE90CC07732A">
+      <oldValue><![CDATA[N]]></oldValue>
+      <newValue><![CDATA[Y]]></newValue>
+    </columnDataChange>
+    <columnDataChange tablename="AD_FIELD" columnname="ISREADONLY" pkRow="1CC08F2C078C420385F59D327FFBFC8E">
+      <oldValue><![CDATA[N]]></oldValue>
+      <newValue><![CDATA[Y]]></newValue>
+    </columnDataChange>
+    <columnDataChange tablename="AD_FIELD" columnname="ISREADONLY" pkRow="35CE2F2F7F06473E9E6F87790D2B7D38">
+      <oldValue><![CDATA[N]]></oldValue>
+      <newValue><![CDATA[Y]]></newValue>
+    </columnDataChange>
+    <columnDataChange tablename="AD_FIELD" columnname="ISREADONLY" pkRow="51659E5A341A4DF5872222A3015E38C0">
+      <oldValue><![CDATA[N]]></oldValue>
+      <newValue><![CDATA[Y]]></newValue>
+    </columnDataChange>
+    <columnDataChange tablename="AD_FIELD" columnname="ISDISPLAYED" pkRow="6DB066FF72DE421296C9D3F3214EA44F">
+      <oldValue><![CDATA[Y]]></oldValue>
+      <newValue><![CDATA[N]]></newValue>
+    </columnDataChange>
+    <columnDataChange tablename="AD_FIELD" columnname="ISREADONLY" pkRow="7D60713751C646288D0470D4DE11784B">
+      <oldValue><![CDATA[N]]></oldValue>
+      <newValue><![CDATA[Y]]></newValue>
+    </columnDataChange>
+    <columnDataChange tablename="AD_FIELD" columnname="ISREADONLY" pkRow="95B42EF3D03D4E0D9257CD81AB733671">
+      <oldValue><![CDATA[N]]></oldValue>
+      <newValue><![CDATA[Y]]></newValue>
+    </columnDataChange>
+    <columnDataChange tablename="AD_FIELD" columnname="NAME" pkRow="B7AA18EF02524A2D922703044B92686E">
+      <oldValue><![CDATA[Deposit Nº]]></oldValue>
+      <newValue><![CDATA[EM_Sscccin_Deposit]]></newValue>
+    </columnDataChange>
+    <columnDataChange tablename="AD_FIELD" columnname="HELP" pkRow="B7AA18EF02524A2D922703044B92686E">
+      <oldValue/>
+      <newValue><![CDATA[@DocStatus@='SCCC_PR' | @SSCCCIN_ClosureCash@='Y' | (@SSCCCIN_PaymentType@!'SH' & @SSCCCIN_PaymentType@!'CH' & @SSCCCIN_PaymentType@!'WH') & @DocStatus@=!'SCCC_RG']]></newValue>
+    </columnDataChange>
+    <columnDataChange tablename="AD_FIELD" columnname="ISDISPLAYED" pkRow="BF2F2D869F4A437B8D8FDE641DB50C7A">
+      <oldValue><![CDATA[Y]]></oldValue>
+      <newValue><![CDATA[N]]></newValue>
+    </columnDataChange>
+    <columnDataChange tablename="AD_FIELD" columnname="NAME" pkRow="F794DC3978C446199BDA8AD4BCDD14BB">
+      <oldValue><![CDATA[Deposit Nº]]></oldValue>
+      <newValue><![CDATA[EM_Sscccin_Deposit]]></newValue>
+    </columnDataChange>
+    <columnDataChange tablename="AD_FIELD" columnname="HELP" pkRow="F794DC3978C446199BDA8AD4BCDD14BB">
+      <oldValue/>
+      <newValue><![CDATA[@DocStatus@='SCCC_PR' | @SSCCCIN_ClosureCash@='Y' | (@SSCCCIN_PaymentType@!'SH' & @SSCCCIN_PaymentType@!'CH' & @SSCCCIN_PaymentType@!'WH') & @DocStatus@=!'SCCC_RG']]></newValue>
+    </columnDataChange>
+    <columnDataChange tablename="AD_FIELD" columnname="ISDISPLAYED" pkRow="FA2D180CCE4C44BD85EC60C02736615F">
+      <oldValue><![CDATA[Y]]></oldValue>
+      <newValue><![CDATA[N]]></newValue>
+    </columnDataChange>
+    <columnDataChange tablename="AD_TABLE" columnname="HQLQUERY" pkRow="D56CF1065EF14D52ADAD2AAB0CB63EFC">
+      <oldValue><![CDATA[select e.id, e.transactionDate, bp.name as businessPartner, 
+gl.name as gLItem, fp.documentNo as finPayment, e.description, 
+e.paymentAmount, e.depositAmount 
+@selectClause@
+from FIN_Finacc_Transaction e
+left join e.businessPartner as bp
+left join e.gLItem as gl
+left join e.finPayment fp
+@joinClause@
+where @additional_filters@
+and e.processed = 'Y'
+and @whereclause@]]></oldValue>
+      <newValue><![CDATA[select e.id, e.transactionDate, bp.name as businessPartner, 
+gl.name as gLItem, fp.documentNo as finPayment, e.description, 
+e.paymentAmount, e.depositAmount, e.sscccinReference as em_sscccin_reference 
+@selectClause@
+from FIN_Finacc_Transaction e
+left join e.businessPartner as bp
+left join e.gLItem as gl
+left join e.finPayment fp
+@joinClause@
+where @additional_filters@
+and e.processed = 'Y'
+and @whereclause@]]></newValue>
+    </columnDataChange>
+  </vector>

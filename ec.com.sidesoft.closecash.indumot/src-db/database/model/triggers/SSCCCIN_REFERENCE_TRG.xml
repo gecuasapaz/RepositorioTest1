@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+  <database name="TRIGGER SSCCCIN_REFERENCE_TRG">
+    <trigger name="SSCCCIN_REFERENCE_TRG" table="FIN_PAYMENT" fires="after" insert="true" update="true" delete="false" foreach="row">
+      <body><![CDATA[	vCheck NUMBER;
+	vReferenceNo VARCHAR2(2000) ;
+	vStatus VARCHAR2(2000) ;
+	vPaymentId VARCHAR2(2000) ;
+
+	vPaymentMethod RECORD;
+BEGIN
+	
+	IF TG_OP IN ('INSERT','UPDATE') THEN
+	
+		IF UPDATING THEN
+		vStatus := :old.status;
+		      IF :new.referenceno <> :old.referenceno THEN
+		      UPDATE FIN_FINACC_TRANSACTION SET em_sscccin_reference = :new.referenceno
+		      WHERE fin_payment_id=:new.fin_payment_id AND em_sscccin_reference<>:new.referenceno;
+		      END IF;
+		ELSE
+		vStatus := :new.status;
+		END IF;
+
+		vReferenceNo := TRIM(COALESCE(:NEW.referenceno,''));
+		vPaymentId := :new.fin_payment_id;
+
+		SELECT * INTO vPaymentMethod FROM fin_paymentmethod WHERE fin_paymentmethod_id=:NEW.fin_paymentmethod_id;
+		IF (vReferenceNo = '' AND vStatus='RPAP') THEN
+			IF vPaymentMethod.em_scca_type_payment IN ('SSCCCIN_D','SSCCCIN_T') THEN
+				RAISE_APPLICATION_ERROR(-20000, '@SSCCCIN_ReferenceNumberRequired@');
+			END IF;
+		END IF;
+	END IF;
+
+END SSCCCIN_REFERENCE_TRG
+]]></body>
+    </trigger>
+  </database>

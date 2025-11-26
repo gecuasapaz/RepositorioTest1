@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+  <database name="MODIFIED TABLE SCCC_CASH_CLOUSURE">
+    <table name="SCCC_CASH_CLOUSURE" primaryKey="SCCC_CASHCLS_KEY">
+      <column name="EM_SSCCCIN_TOGGLEDOCSTATUS" primaryKey="false" required="true" type="VARCHAR" size="60" autoIncrement="false">
+        <default><![CDATA[R]]></default>
+        <onCreateDefault/>
+      </column>
+      <column name="EM_SSCCCIN_PROCESSED" primaryKey="false" required="true" type="CHAR" size="1" autoIncrement="false">
+        <default><![CDATA[N]]></default>
+        <onCreateDefault/>
+      </column>
+      <column name="EM_SSCCCIN_PROCESING" primaryKey="false" required="true" type="CHAR" size="1" autoIncrement="false">
+        <default><![CDATA[N]]></default>
+        <onCreateDefault/>
+      </column>
+      <check name="EM_SSCCCIN_PROCESING_CHECK"><![CDATA[EM_SSCCCIN_PROCESING IN ('Y', 'N')]]></check>
+      <check name="EM_SSCCCIN_PROCESSED_CHECK"><![CDATA[EM_SSCCCIN_PROCESSED IN ('Y', 'N')]]></check>
+    </table>
+  </database>

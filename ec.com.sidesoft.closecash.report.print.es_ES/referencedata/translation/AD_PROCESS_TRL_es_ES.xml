@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<compiereTrl baseLanguage="en_US" language="es_ES" table="AD_PROCESS" version="">
+  <row id="33805987171F479692D8305EEB49ECB7" trl="Y">
+    <value column="Name" isTrl="Y" original="Cash Closing Income">Reporte Ingresos Cierre de Caja</value>
+    <value column="Description" isTrl="N" original=""/>
+    <value column="Help" isTrl="N" original=""/>
+  </row>
+  <row id="A611EE5F3AB94CE9BF0A1AD5966813FE" trl="N">
+    <value column="Name" isTrl="N" original="Generate Report Close Cash">Generate Report Close Cash</value>
+    <value column="Description" isTrl="N" original=""/>
+    <value column="Help" isTrl="N" original=""/>
+  </row>
+</compiereTrl>

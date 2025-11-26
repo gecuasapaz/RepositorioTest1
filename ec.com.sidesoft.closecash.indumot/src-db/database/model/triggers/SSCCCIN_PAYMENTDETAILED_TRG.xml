@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+  <database name="TRIGGER SSCCCIN_PAYMENTDETAILED_TRG">
+    <trigger name="SSCCCIN_PAYMENTDETAILED_TRG" table="SSCRCC_PAYMENT_DETAILED" fires="before" insert="true" update="true" delete="true" foreach="row">
+      <body><![CDATA[	vRecord RECORD;
+BEGIN
+	IF TG_OP IN ('INSERT','UPDATE') THEN
+		SELECT cl.* INTO vRecord
+		FROM sccc_cash_clousureline AS ccl
+			JOIN sccc_cash_clousure AS cl ON cl.sccc_cash_clousure_id=ccl.sccc_cash_clousure_id
+		WHERE ccl.sccc_cash_clousureline_id=:NEW.sccc_cash_clousureline_id;
+	ELSE
+		SELECT * INTO vRecord
+		FROM sccc_cash_clousureline AS ccl
+			JOIN sccc_cash_clousure AS cl ON cl.sccc_cash_clousure_id=ccl.sccc_cash_clousure_id
+		WHERE ccl.sccc_cash_clousureline_id=:OLD.sccc_cash_clousureline_id;
+	END IF;
+	
+	IF vRecord.docstatus IN ('SCCC_PR') THEN
+		RAISE_APPLICATION_ERROR(-20000, '@SSCCCIN_PaymentDetailedBlock@');
+	END IF;
+END SSCCCIN_PAYMENTDETAILED_TRG
+]]></body>
+    </trigger>
+  </database>

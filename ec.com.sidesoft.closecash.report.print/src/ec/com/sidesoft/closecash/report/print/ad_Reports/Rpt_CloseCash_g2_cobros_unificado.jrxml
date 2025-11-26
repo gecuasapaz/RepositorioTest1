@@ -1,0 +1,484 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="Rpt_CloseCash" pageWidth="567" pageHeight="814" whenNoDataType="BlankPage" columnWidth="567" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" isSummaryWithPageHeaderAndFooter="true" uuid="cfaf7223-c06e-4591-8e0f-b406a2336150">
+	<property name="ireport.zoom" value="2.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<property name="net.sf.jasperreports.export.xls.detect.cell.type" value="true"/>
+	<parameter name="NUMBERFORMAT" class="java.text.DecimalFormat" isForPrompting="false">
+		<defaultValueExpression><![CDATA[new DecimalFormat("###,##0.00;-###,##0.00", new DecimalFormatSymbols())]]></defaultValueExpression>
+	</parameter>
+	<parameter name="NUMBERDECIMAL" class="java.lang.Integer" isForPrompting="false">
+		<defaultValueExpression><![CDATA[2]]></defaultValueExpression>
+	</parameter>
+	<parameter name="DOCUMENT_ID" class="java.lang.String">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="BASE_WEB" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="SOURCE_PATH" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="SUBREPORT_DIR" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="AD_USER_ID" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA["100"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="SETUP_ID" class="java.lang.String">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="fecha_c" class="java.lang.String">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<queryString>
+		<![CDATA[select * from (
+	--Cobros g2
+	SELECT fecha_t,'',doc,cliente,m_pago,t_doc,'',total_line,cd,grupo,c_grupo,texto
+	FROM (
+		SELECT
+			CASE WHEN cir.documentno IS NULL AND pd.C_Glitem_ID IS NULL THEN TO_CHAR(ci.dateinvoiced,'dd/MM/yyyy')
+				WHEN pd.C_Glitem_ID IS NOT NULL  THEN TO_CHAR(p.paymentdate,'dd/MM/yyyy')
+				WHEN dti.EM_Ssdnid_Interestdebitnote = 'Y' THEN TO_CHAR(p.paymentdate,'dd/MM/yyyy')
+				ELSE TO_CHAR(cir.dateinvoiced,'dd/MM/yyyy')
+			END AS fecha_t
+			, '' AS c_usuario
+			, p.documentno AS doc
+			, bp.name AS cliente
+			, pm.name AS m_pago
+			, dt.name AS t_doc
+			, psd.fin_payment_detail_id AS factura
+			, ROUND(p.amount,3) AS amount
+			,CASE WHEN ROUND(p.amount,3) = 0  THEN psd.amount
+				WHEN ROUND(p.amount,3) > ROUND(psd.amount,3) THEN psd.amount
+				WHEN p.amount+ROUND(p.used_credit,4) <> psd.amount THEN psd.amount
+				ELSE p.amount
+			END AS total
+			, true AS cd
+			, 'COBROS' AS grupo
+			, 2 AS c_grupo
+			, 'Total de Cobros' AS texto
+			,CASE WHEN ROUND(p.generated_credit,4) = ROUND(p.used_credit,4)
+				OR ROUND(p.amount,3)+ROUND(p.used_credit,3) = ROUND(psd.amount,3)
+				THEN 0
+				ELSE coalesce(p.used_credit,0) END AS used_credit
+			,p.amount AS total_line
+		FROM FIN_Payment p
+			LEFT JOIN c_bpartner bp ON bp.c_bpartner_id = p.c_bpartner_id
+			LEFT JOIN FIN_Paymentmethod pm ON pm.FIN_Paymentmethod_ID = p.FIN_Paymentmethod_ID
+			LEFT JOIN C_DocType dt ON dt.C_DocType_id = p.C_DocType_id
+			LEFT JOIN fin_payment_detail pd ON p.FIN_Payment_id = pd.FIN_Payment_id
+			LEFT JOIN fin_payment_scheduledetail psd ON pd.fin_payment_detail_id = psd.fin_payment_detail_id
+			LEFT JOIN FIN_Payment_Schedule ps ON psd.fin_payment_schedule_invoice = ps.fin_payment_schedule_id
+			LEFT JOIN c_invoice ci ON ci.c_invoice_id = ps.c_invoice_id
+			LEFT JOIN C_DocType dti ON dti.C_DocType_id = ci.C_DocType_id
+			LEFT JOIN c_invoice cir ON cir.c_invoice_id = ci.em_scnr_invoice_id
+			JOIN ( SELECT sd.C_DocType_id,ss.Sccc_Setup_ID
+					FROM Sccc_Setup ss
+					JOIN Ssccso_Type_Of_Document sd ON sd.Sccc_Setup_ID = ss.Sccc_Setup_ID
+					GROUP BY 1,2
+			) dc ON dc.C_DocType_id = dt.C_DocType_id AND dc.Sccc_Setup_ID = $P{SETUP_ID}
+		WHERE (pd.C_Glitem_ID IS NOT NULL OR TRUNC(ci.dateinvoiced) = TRUNC(p.paymentdate) )
+			AND P.STATUS <> 'RPR'
+			AND 1 = 1
+	) x
+    GROUP BY fecha_t,doc,cliente,m_pago,t_doc,used_credit,cd,grupo,c_grupo,texto,amount,total_line
+
+	UNION ALL
+
+	--OTROS COBROS Y ANTICIPOS g3
+		SELECT fecha_t,'',doc,cliente,m_pago,t_doc,'',total_line,cd,grupo,c_grupo,texto
+
+		FROM (
+	SELECT
+		CASE
+			WHEN  dti.EM_Ssdnid_Interestdebitnote = 'Y' AND (TRUNC(ci.dateinvoiced) <> TRUNC(p.paymentdate) AND TRUNC(cir.dateinvoiced) = TRUNC(p.paymentdate))
+				THEN TO_CHAR(cir.dateinvoiced,'dd/MM/yyyy')
+			WHEN  dti.EM_Ssdnid_Interestdebitnote = 'Y' AND (TRUNC(ci.dateinvoiced) = TRUNC(p.paymentdate) AND TRUNC(cir.dateinvoiced) <> TRUNC(p.paymentdate))
+				THEN TO_CHAR(cir.dateinvoiced,'dd/MM/yyyy')
+			WHEN  dti.EM_Ssdnid_Interestdebitnote = 'Y' AND (TRUNC(ci.dateinvoiced) <> TRUNC(p.paymentdate) AND TRUNC(cir.dateinvoiced) <> TRUNC(p.paymentdate))
+				THEN TO_CHAR(p.paymentdate,'dd/MM/yyyy')
+			ELSE TO_CHAR(p.paymentdate,'dd/MM/yyyy')
+		END AS fecha_t
+		, psd.fin_payment_scheduledetail_id AS c_usuario
+		, p.documentno AS doc
+		, CASE WHEN P.STATUS = 'RPVOID' THEN 'ANULADO' ELSE bp.name END AS cliente
+		, pm.name AS m_pago
+		, dt.name AS t_doc,
+		'' AS factura
+		, SUM(COALESCE(CASE WHEN (ROUND(p.amount,3) = 0 AND p.status <> 'RPR') THEN psd.amount
+			WHEN (ROUND(p.amount,3) = 0 AND p.status = 'RPR') THEN 0
+			WHEN ROUND(psd.amount,3) < ROUND(p.amount,3) AND p.amount + ROUND(p.generated_credit,4) <> psd.amount  THEN psd.amount
+			WHEN ROUND(p.amount,3) <  ROUND(psd.amount,3) AND ROUND(p.generated_credit,4) = 0 AND (p.amount + ROUND(p.used_credit,4)) = psd.amount  THEN p.amount
+			WHEN P.STATUS = 'RPVOID' THEN 0
+			ELSE p.amount
+		END,0)) AS total
+		, true AS cd
+		, 'COBROS' AS grupo
+		, 2 AS c_grupo
+		, 'Total de Cobros' AS texto
+		,CASE WHEN ROUND(p.generated_credit,4) = ROUND(p.used_credit,4) THEN 0
+          WHEN ROUND(p.generated_credit,4) = ROUND(p.amount,4) THEN 0
+          WHEN ROUND(p.used_credit,4) > ROUND(p.amount,4) THEN 0
+			ELSE coalesce(p.used_credit,0) END AS used_credit
+		,sum(p.amount) AS total_line
+      ,p.amount AS amount_payment
+		FROM FIN_Payment p
+		LEFT JOIN c_bpartner bp ON bp.c_bpartner_id = p.c_bpartner_id
+		LEFT JOIN FIN_Paymentmethod pm ON pm.FIN_Paymentmethod_ID = p.FIN_Paymentmethod_ID
+		LEFT JOIN C_DocType dt ON dt.C_DocType_id = p.C_DocType_id
+		LEFT JOIN fin_payment_detail pd ON p.FIN_Payment_id = pd.FIN_Payment_id
+		LEFT JOIN fin_payment_scheduledetail psd ON pd.fin_payment_detail_id = psd.fin_payment_detail_id
+		LEFT JOIN FIN_Payment_Schedule ps ON psd.fin_payment_schedule_invoice = ps.fin_payment_schedule_id
+		LEFT JOIN c_invoice ci ON ci.c_invoice_id = ps.c_invoice_id
+		LEFT JOIN C_DocType dti ON dti.C_DocType_id = ci.C_DocType_id
+		LEFT JOIN c_invoice cir ON cir.c_invoice_id = ci.em_scnr_invoice_id
+        JOIN ( SELECT sd.C_DocType_id,ss.Sccc_Setup_ID
+                FROM Sccc_Setup ss
+                JOIN Ssccso_Type_Of_Document sd ON sd.Sccc_Setup_ID = ss.Sccc_Setup_ID
+				GROUP BY 1,2
+        ) dc ON dc.C_DocType_id = dt.C_DocType_id AND dc.Sccc_Setup_ID = $P{SETUP_ID}
+		WHERE (TRUNC(ci.dateinvoiced) <> TRUNC(p.paymentdate) OR TRUNC(cir.dateinvoiced) <> TRUNC(p.paymentdate) OR (cir.dateinvoiced IS NULL AND ci.dateinvoiced IS NULL AND p.status = 'RPVOID'))
+			AND P.STATUS<>'RPAP'
+			AND 1 = 1
+		GROUP BY fecha_t,c_usuario,doc,cliente,generated_credit,generated_credit,p.amount,used_credit,m_pago,t_doc
+
+	UNION ALL
+
+	SELECT TO_CHAR(p.paymentdate,'dd/MM/yyyy') AS fecha_t
+		, psd.fin_payment_scheduledetail_id AS c_usuario
+		, p.documentno AS doc
+		, bp.name AS cliente
+		, pm.name AS m_pago
+		, dt.name AS t_doc,
+		'' AS factura
+		, SUM(CASE WHEN (ROUND(p.amount,3) = 0 AND p.status <> 'RPR') THEN psd.amount
+			WHEN (ROUND(p.amount,3) = 0 AND p.status = 'RPR') THEN 0
+			WHEN (ROUND(psd.amount,3) < ROUND(p.amount,3) OR ROUND(psd.amount,3) > ROUND(p.amount,3)) AND ROUND(p.generated_credit,4) = 0 AND ROUND(p.used_credit,4) = 0 THEN psd.amount
+			WHEN (ROUND(psd.amount,3) < ROUND(p.amount,3) OR ROUND(psd.amount,3) > ROUND(p.amount,3)) AND ROUND(p.generated_credit,4) = ROUND(psd.amount,3) THEN ROUND(p.generated_credit,4)
+			ELSE p.amount
+		END) AS total
+		, true AS cd
+		, 'COBROS' AS grupo
+		, 2 AS c_grupo
+		, 'Total de Cobros' AS texto
+		,CASE WHEN ROUND(p.generated_credit,4) = ROUND(p.used_credit,4) THEN 0
+          WHEN ROUND(p.generated_credit,4) = ROUND(p.amount,4) THEN 0
+          WHEN ROUND(p.used_credit,4) > ROUND(p.amount,4) THEN 0
+			ELSE coalesce(p.used_credit,0) END AS used_credit
+		,(p.amount) AS total_line
+      ,p.amount AS amount_payment
+	FROM FIN_Payment p
+		LEFT JOIN c_bpartner bp ON bp.c_bpartner_id = p.c_bpartner_id
+		LEFT JOIN FIN_Paymentmethod pm ON pm.FIN_Paymentmethod_ID = p.FIN_Paymentmethod_ID
+		LEFT JOIN C_DocType dt ON dt.C_DocType_id = p.C_DocType_id
+		LEFT JOIN fin_payment_detail pd ON p.FIN_Payment_id = pd.FIN_Payment_id
+		LEFT JOIN fin_payment_scheduledetail psd ON pd.fin_payment_detail_id = psd.fin_payment_detail_id
+		LEFT JOIN FIN_Payment_Schedule ps ON psd.fin_payment_schedule_invoice = ps.fin_payment_schedule_id
+		LEFT JOIN c_invoice ci ON ci.c_invoice_id = ps.c_invoice_id
+		LEFT JOIN c_invoice cir ON cir.c_invoice_id = ci.em_scnr_invoice_id
+        JOIN ( SELECT sd.C_DocType_id,ss.Sccc_Setup_ID
+                FROM Sccc_Setup ss
+                JOIN Ssccso_Type_Of_Document sd ON sd.Sccc_Setup_ID = ss.Sccc_Setup_ID
+				GROUP BY 1,2
+        ) dc ON dc.C_DocType_id = dt.C_DocType_id AND dc.Sccc_Setup_ID = $P{SETUP_ID}
+	WHERE  (ci.c_invoice_id IS NULL AND cir.c_invoice_id IS NULL) AND pd.C_Glitem_ID IS NULL
+		AND P.STATUS <> 'RPVOID' AND  P.STATUS <> 'RPAP'
+		AND ROUND(p.generated_credit,4) > 0
+		AND 1 = 1
+	GROUP BY fecha_t,c_usuario,doc,cliente,generated_credit,used_credit,p.amount,m_pago,t_doc ) x
+	WHERE doc NOT LIKE '%*Z*%' AND doc NOT IN (
+	SELECT doc FROM (
+	SELECT
+		CASE WHEN cir.documentno IS NULL AND pd.C_Glitem_ID IS NULL THEN TO_CHAR(ci.dateinvoiced,'dd/MM/yyyy')
+			WHEN pd.C_Glitem_ID IS NOT NULL  THEN TO_CHAR(p.paymentdate,'dd/MM/yyyy')
+			ELSE TO_CHAR(cir.dateinvoiced,'dd/MM/yyyy')
+		END AS fecha_t
+		, '' AS c_usuario
+		, p.documentno AS doc
+		, bp.name AS cliente
+		, pm.name AS m_pago
+		, dt.name AS t_doc
+		, psd.fin_payment_detail_id AS factura
+		,CASE WHEN ROUND(p.amount,3) = 0  THEN psd.amount
+			WHEN ROUND(p.amount,3) > ROUND(psd.amount,3) THEN psd.amount
+            WHEN p.amount + ROUND(p.used_credit,4) <> psd.amount THEN psd.amount
+			ELSE p.amount
+		END AS total
+		,CASE WHEN ROUND(p.generated_credit,4) = ROUND(p.used_credit,4)
+			OR ROUND(p.amount,3)+ROUND(p.used_credit,3) = ROUND(psd.amount,3)
+			THEN 0
+			ELSE coalesce(p.used_credit,0) END AS used_credit
+		,CASE WHEN ROUND(p.amount,3) = 0  THEN psd.amount
+			WHEN ROUND(p.amount,3) > ROUND(psd.amount,3) AND ROUND(psd.amount,3) >  0 THEN psd.amount
+			WHEN ROUND(psd.amount,3) <  0 THEN 0
+			ELSE p.amount
+		END AS total_line
+		,p.amount AS importe
+		FROM FIN_Payment p
+			LEFT JOIN c_bpartner bp ON bp.c_bpartner_id = p.c_bpartner_id
+			LEFT JOIN FIN_Paymentmethod pm ON pm.FIN_Paymentmethod_ID = p.FIN_Paymentmethod_ID
+			LEFT JOIN C_DocType dt ON dt.C_DocType_id = p.C_DocType_id
+			LEFT JOIN fin_payment_detail pd ON p.FIN_Payment_id = pd.FIN_Payment_id
+			LEFT JOIN fin_payment_scheduledetail psd ON pd.fin_payment_detail_id = psd.fin_payment_detail_id
+			LEFT JOIN FIN_Payment_Schedule ps ON psd.fin_payment_schedule_invoice = ps.fin_payment_schedule_id
+			LEFT JOIN c_invoice ci ON ci.c_invoice_id = ps.c_invoice_id
+			LEFT JOIN c_invoice cir ON cir.c_invoice_id = ci.em_scnr_invoice_id
+			JOIN ( SELECT sd.C_DocType_id,ss.Sccc_Setup_ID
+					FROM Sccc_Setup ss
+					JOIN Ssccso_Type_Of_Document sd ON sd.Sccc_Setup_ID = ss.Sccc_Setup_ID
+					GROUP BY 1,2
+			) dc ON dc.C_DocType_id = dt.C_DocType_id AND dc.Sccc_Setup_ID = $P{SETUP_ID}
+	WHERE (pd.C_Glitem_ID IS NOT NULL OR TRUNC(ci.dateinvoiced) = TRUNC(p.paymentdate) )
+		AND 1 = 1
+		AND  P.STATUS<>'RPR') x
+    GROUP BY fecha_t,doc,cliente,m_pago,t_doc,used_credit,importe
+	HAVING CASE WHEN SUM(total) = SUM(total_line) THEN SUM(total) ELSE SUM(total) - used_credit END >= importe	)
+	GROUP BY fecha_t,doc,cliente,m_pago,used_credit,t_doc,cd,grupo,c_grupo,texto,amount_payment,x.total_line
+) as cobros
+where fecha_t=$P{fecha_c}
+
+group by 1,2,3,4,5,6,7,8,9,10,11,12]]>
+	</queryString>
+	<field name="fecha_t" class="java.lang.String"/>
+	<field name="?column?" class="java.lang.String"/>
+	<field name="doc" class="java.lang.String"/>
+	<field name="cliente" class="java.lang.String"/>
+	<field name="m_pago" class="java.lang.String"/>
+	<field name="t_doc" class="java.lang.String"/>
+	<field name="total_line" class="java.math.BigDecimal"/>
+	<field name="cd" class="java.lang.Boolean"/>
+	<field name="grupo" class="java.lang.String"/>
+	<field name="c_grupo" class="java.lang.Integer"/>
+	<field name="texto" class="java.lang.String"/>
+	<variable name="REPORT_PAGE" class="java.lang.Integer" resetType="None" incrementType="Page">
+		<variableExpression><![CDATA[$V{PAGE_NUMBER}]]></variableExpression>
+	</variable>
+	<variable name="subtotal_g" class="java.math.BigDecimal" resetType="Group" resetGroup="Transacction" calculation="Sum">
+		<variableExpression><![CDATA[$F{total_line}]]></variableExpression>
+	</variable>
+	<variable name="total_vc" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[( $F{c_grupo}==1? $F{total_line} : 0 )]]></variableExpression>
+	</variable>
+	<variable name="total_cc" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[( $F{c_grupo}==2? $F{total_line} : 0 )]]></variableExpression>
+	</variable>
+	<variable name="total_oc" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[( $F{c_grupo}==3? $F{total_line} : 0 )]]></variableExpression>
+	</variable>
+	<variable name="total_rc" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[( $F{c_grupo}==4? $F{total_line} : 0 )]]></variableExpression>
+	</variable>
+	<variable name="total_ie" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[( $F{c_grupo}==4? $F{total_line} : 0 )]]></variableExpression>
+	</variable>
+	<variable name="total_vcr" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[( $F{c_grupo}==2? $F{total_line} : 0 )]]></variableExpression>
+	</variable>
+	<variable name="total_credito_contado" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[( $F{c_grupo}==12? $F{total_line} : 0 )]]></variableExpression>
+	</variable>
+	<variable name="total_ccr" class="java.math.BigDecimal" calculation="Sum"/>
+	<variable name="total_rcr" class="java.math.BigDecimal" calculation="Sum"/>
+	<variable name="efectivo" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[( $F{m_pago}.toUpperCase().contains("EFECTIVO") && ($F{c_grupo}==2 || $F{c_grupo}==3 || $F{c_grupo}==4)? $F{total_line} : 0 )]]></variableExpression>
+	</variable>
+	<variable name="cheque" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[( $F{m_pago}.toUpperCase().contains("CHEQUE") && ($F{c_grupo}==2 || $F{c_grupo}==3 || $F{c_grupo}==4)? $F{total_line} : 0 )]]></variableExpression>
+	</variable>
+	<variable name="tarjeta" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[( $F{m_pago}.toUpperCase().contains("TARJETA") && ($F{c_grupo}==2||$F{c_grupo}==3 || $F{c_grupo}==4)? $F{total_line} : 0 )]]></variableExpression>
+	</variable>
+	<variable name="transferencia" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[( $F{m_pago}.toUpperCase().contains("TRANSFERENCIA") && ($F{c_grupo}==2 ||$F{c_grupo}==3 || $F{c_grupo}==4)? $F{total_line} : 0 )]]></variableExpression>
+	</variable>
+	<variable name="deposito" class="java.math.BigDecimal" calculation="Sum">
+		<variableExpression><![CDATA[(($F{m_pago}.toUpperCase().contains("DEPÓSITO")) && ($F{c_grupo}==2 || $F{c_grupo}==3 || $F{c_grupo}==4)? $F{total_line} : 0 )]]></variableExpression>
+	</variable>
+	<group name="Transacction">
+		<groupExpression><![CDATA[$F{c_grupo}]]></groupExpression>
+		<groupHeader>
+			<band height="26">
+				<staticText>
+					<reportElement key="staticText-12" x="104" y="16" width="81" height="10" isRemoveLineWhenBlank="true" uuid="bd6a7c3d-80ac-4f4e-9927-184cc710a407"/>
+					<box leftPadding="3" rightPadding="3">
+						<pen lineWidth="1.0"/>
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.0"/>
+					</box>
+					<textElement textAlignment="Center" verticalAlignment="Top">
+						<font size="8" isBold="true" isUnderline="true" pdfFontName="Helvetica"/>
+					</textElement>
+					<text><![CDATA[Documento]]></text>
+				</staticText>
+				<staticText>
+					<reportElement key="staticText-12" x="360" y="16" width="140" height="10" isRemoveLineWhenBlank="true" uuid="ea5b3ca7-3f90-474c-ad3b-0968a47e01ba"/>
+					<box leftPadding="3" rightPadding="3">
+						<pen lineWidth="1.0"/>
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.0"/>
+					</box>
+					<textElement textAlignment="Center" verticalAlignment="Top">
+						<font size="8" isBold="true" isUnderline="true" pdfFontName="Helvetica"/>
+					</textElement>
+					<text><![CDATA[Método de pago]]></text>
+				</staticText>
+				<staticText>
+					<reportElement key="staticText-12" x="185" y="16" width="175" height="10" isRemoveLineWhenBlank="true" uuid="39058c7f-4256-4820-9437-7dae6edc7d4f"/>
+					<box leftPadding="3" rightPadding="3">
+						<pen lineWidth="1.0"/>
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.0"/>
+					</box>
+					<textElement textAlignment="Center" verticalAlignment="Top">
+						<font size="8" isBold="true" isUnderline="true" pdfFontName="Helvetica"/>
+					</textElement>
+					<text><![CDATA[Cliente]]></text>
+				</staticText>
+				<staticText>
+					<reportElement key="staticText-12" x="500" y="16" width="67" height="10" isRemoveLineWhenBlank="true" uuid="9a48a25d-d824-4624-87bc-ac113df66022"/>
+					<box leftPadding="3" rightPadding="3">
+						<pen lineWidth="1.0"/>
+						<topPen lineWidth="0.0"/>
+						<leftPen lineWidth="0.0"/>
+						<bottomPen lineWidth="0.0"/>
+						<rightPen lineWidth="0.0"/>
+					</box>
+					<textElement textAlignment="Center" verticalAlignment="Top">
+						<font size="8" isBold="true" isUnderline="true" pdfFontName="Helvetica"/>
+					</textElement>
+					<text><![CDATA[Valor]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement x="0" y="1" width="567" height="15" isRemoveLineWhenBlank="true" uuid="03cc39dd-8453-416c-8379-ccd19a01e400">
+						<printWhenExpression><![CDATA[$F{c_grupo}<10]]></printWhenExpression>
+					</reportElement>
+					<box leftPadding="3">
+						<topPen lineWidth="0.0"/>
+					</box>
+					<textElement verticalAlignment="Middle">
+						<font size="10" isBold="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{grupo}]]></textFieldExpression>
+				</textField>
+				<textField evaluationTime="Auto">
+					<reportElement key="staticText-12" x="0" y="16" width="104" height="10" isRemoveLineWhenBlank="true" uuid="24e35df0-2231-4b07-96a5-1644887dddb7"/>
+					<textElement textAlignment="Center" verticalAlignment="Top" markup="none">
+						<font size="8" isBold="true" isUnderline="true" pdfFontName="Helvetica"/>
+					</textElement>
+					<textFieldExpression><![CDATA["Tipo de documento"]]></textFieldExpression>
+				</textField>
+			</band>
+		</groupHeader>
+		<groupFooter>
+			<band height="15">
+				<textField isBlankWhenNull="true">
+					<reportElement key="staticText-12" x="0" y="0" width="500" height="15" isRemoveLineWhenBlank="true" uuid="b518e68b-10e2-4e18-97cd-16cb0080789d">
+						<printWhenExpression><![CDATA[!($F{c_grupo}.equals(new Integer(8))|| $F{c_grupo}.equals(new Integer(12))||$F{c_grupo}.equals(new Integer(20)))]]></printWhenExpression>
+					</reportElement>
+					<box rightPadding="5"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle" markup="none">
+						<font size="8" isBold="true" pdfFontName="Helvetica"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{texto}]]></textFieldExpression>
+				</textField>
+				<textField isBlankWhenNull="true">
+					<reportElement x="500" y="0" width="67" height="15" isRemoveLineWhenBlank="true" forecolor="#010101" uuid="a29d85e3-195c-4a1c-9cad-4fd3427b4c9e">
+						<printWhenExpression><![CDATA[!($F{c_grupo}.equals(new Integer(8))|| $F{c_grupo}.equals(new Integer(12))||$F{c_grupo}.equals(new Integer(20)))]]></printWhenExpression>
+					</reportElement>
+					<box rightPadding="3">
+						<topPen lineWidth="0.75"/>
+					</box>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
+						<font size="8" isBold="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$V{subtotal_g}]]></textFieldExpression>
+					<patternExpression><![CDATA[$P{NUMBERFORMAT}.toPattern()]]></patternExpression>
+				</textField>
+			</band>
+		</groupFooter>
+	</group>
+	<pageHeader>
+		<band splitType="Stretch"/>
+	</pageHeader>
+	<detail>
+		<band height="11">
+			<textField isStretchWithOverflow="true" pattern="" isBlankWhenNull="true">
+				<reportElement x="185" y="0" width="175" height="11" isPrintWhenDetailOverflows="true" forecolor="#010101" uuid="b4c5e51d-7b6a-4b27-b80d-a712347dd084"/>
+				<box leftPadding="3" rightPadding="3">
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+				<textElement verticalAlignment="Middle">
+					<font size="7"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{cliente}]]></textFieldExpression>
+				<patternExpression><![CDATA[$P{NUMBERFORMAT}.toPattern()]]></patternExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="104" y="0" width="81" height="11" isPrintWhenDetailOverflows="true" forecolor="#010101" uuid="05674839-af17-4738-8ee1-d1c16148b61d"/>
+				<box leftPadding="3" rightPadding="3">
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font size="7"/>
+				</textElement>
+				<textFieldExpression><![CDATA[($F{c_grupo}.equals(new Integer(9)))?$F{t_doc}:$F{doc}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="360" y="0" width="140" height="11" isRemoveLineWhenBlank="true" isPrintWhenDetailOverflows="true" forecolor="#010101" uuid="358aa113-2256-46b9-a771-45682ad0b831">
+					<printWhenExpression><![CDATA[$F{c_grupo}<12]]></printWhenExpression>
+				</reportElement>
+				<box leftPadding="3" rightPadding="3">
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font size="7"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{m_pago}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="500" y="0" width="67" height="11" isRemoveLineWhenBlank="true" isPrintWhenDetailOverflows="true" forecolor="#010101" uuid="9e31a365-2bad-4ba8-a1e6-fa78e2e6f9a2">
+					<printWhenExpression><![CDATA[$F{c_grupo}<12]]></printWhenExpression>
+				</reportElement>
+				<box leftPadding="3" rightPadding="3">
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="7"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{total_line}]]></textFieldExpression>
+				<patternExpression><![CDATA[$P{NUMBERFORMAT}.toPattern()]]></patternExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement x="0" y="0" width="104" height="11" isPrintWhenDetailOverflows="true" forecolor="#010101" uuid="7b7cccbf-c056-42fd-af53-0babe881bc3a"/>
+				<box leftPadding="3" rightPadding="3">
+					<topPen lineWidth="0.0"/>
+					<leftPen lineWidth="0.0"/>
+					<bottomPen lineWidth="0.0"/>
+					<rightPen lineWidth="0.0"/>
+				</box>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font size="7"/>
+				</textElement>
+				<textFieldExpression><![CDATA[($F{c_grupo}.equals(new Integer(9)))?$F{doc}:$F{t_doc}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<columnFooter>
+		<band/>
+	</columnFooter>
+</jasperReport>

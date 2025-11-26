@@ -1,0 +1,367 @@
+<?xml version="1.0"?>
+  <database name="FUNCTION SSCCCIN_RECORD">
+    <function name="SSCCCIN_RECORD" type="NULL">
+      <parameter name="pinstanceid" type="VARCHAR" mode="in">
+        <default/>
+      </parameter>
+      <body><![CDATA[TYPE RECORD IS REF CURSOR;
+	vRecord RECORD;
+	vCashClosure RECORD;
+	vSetup RECORD;
+    vIncExp RECORD;
+    
+    vResult VARCHAR2(2000) := '';
+	vRecordID VARCHAR2(32);
+	vUserID VARCHAR2(32);
+	vCheck NUMBER;
+	v_Message VARCHAR2(2000):='';
+
+	vPaymentIn NUMBER;
+	vIncomeExpenses NUMBER;
+	vTotal NUMBER;
+	vTotalLines NUMBER;
+	vDifference NUMBER;
+	vTotalIncomes NUMBER;
+	vIncomes NUMBER:=0;
+	vExpenses NUMBER:=0;
+	vTotalExpenses NUMBER;
+	vAmount NUMBER;
+	v_count NUMBER;
+
+BEGIN
+
+	--  Update AD_PInstance
+	DBMS_OUTPUT.PUT_LINE('Updating PInstance - Processing ' || pInstanceID) ;
+	vResult := 'PInstanceNotFound';
+	AD_UPDATE_PINSTANCE(pInstanceID, NULL, 'Y', NULL, NULL) ;
+
+	BEGIN
+  
+		FOR vRecord IN (
+			SELECT
+				i.Record_ID,
+				i.AD_User_ID,
+				p.ParameterName,
+				p.P_String,
+				p.P_Number,
+				p.P_Date,
+				p.AD_Client_ID,
+				p.AD_Org_ID,
+				p.CreatedBy        
+			FROM AD_PInstance AS i
+				LEFT JOIN AD_PInstance_Para AS p ON i.AD_PInstance_ID = p.AD_PInstance_ID
+			WHERE i.AD_PInstance_ID = pInstanceID
+			ORDER BY p.SeqNo
+      ) LOOP
+			vRecordID := vRecord.Record_ID;
+			vUserID := vRecord.AD_User_ID; 
+		END LOOP;
+		
+		--Obtenemos el cierre de caja
+		SELECT * INTO vCashClosure
+		FROM sccc_cash_clousure
+		WHERE sccc_cash_clousure_id=vRecordID;
+		
+		--Validar que existan lineas
+		SELECT COUNT(*) INTO vCheck
+		FROM sccc_cash_clousureline
+		WHERE sccc_cash_clousure_id=vRecordID;
+		IF vCheck = 0 THEN
+			RAISE_APPLICATION_ERROR(-20000,'@SCCC_LINES_NOT_FOUND@');
+		END IF;
+		
+		--Obtenemos la configuracion del cierre de caja
+		SELECT * INTO vSetup
+		FROM sccc_setup
+		WHERE sccc_setup_id=vCashClosure.sccc_setup_id;
+		
+		--Validar si el periodo esta cerrado
+		SELECT COUNT(*) INTO vCheck
+		FROM c_period
+		WHERE vCashClosure.closingdate>=startdate AND vCashClosure.closingdate<=enddate;
+		IF vCheck = 0 THEN
+			RAISE_APPLICATION_ERROR(-20000,'@PeriodNotAvailable@');
+		END IF;
+		
+		--Validar que los metodos de cobros esten configurados
+		SELECT COUNT(*) into vCheck
+		FROM sccc_payment_method
+		WHERE sccc_setup_id=vCashClosure.sccc_setup_id;
+		IF vCheck =0 THEN
+			RAISE_APPLICATION_ERROR(-20000,'@Sscccin_PaymentMethodsNotConfigured@');
+		END IF;
+		
+		--Validar que los tipos de documentos esten configurados
+		SELECT COUNT(*) into vCheck
+		FROM ssccso_type_of_document
+		WHERE sccc_setup_id=vCashClosure.sccc_setup_id;
+		IF vCheck =0 THEN
+			RAISE_APPLICATION_ERROR(-20000,'@Sscccin_DocumentTypesUnconfigured@');
+		END IF;
+		
+		--Validar que los tipos de documentos para facturas esten configurados
+		SELECT COUNT(*) into vCheck
+		FROM sscccin_invoice_doctype
+		WHERE sccc_setup_id=vCashClosure.sccc_setup_id;
+		IF vCheck =0 THEN
+			RAISE_APPLICATION_ERROR(-20000,'@Sscccin_DocumentTypesUnconfiguredForInvoices@');
+		END IF;
+		
+		--Validar pagos detallados
+		FOR vRecord IN (
+			SELECT COALESCE(SUM(pd.amount),0) AS detailedAmount,
+				COALESCE(ccl.amount,0) AS totalAmount,
+				pm.name AS paymentMethod
+			FROM sccc_cash_clousureline AS ccl
+				JOIN fin_paymentmethod AS pm ON pm.fin_paymentmethod_id=ccl.fin_paymentmethod_id
+				JOIN sscrcc_payment_detailed AS pd ON pd.sccc_cash_clousureline_id=ccl.sccc_cash_clousureline_id
+			WHERE ccl.sccc_cash_clousure_id=vRecordID
+			AND EXISTS (
+				SELECT 1 
+				FROM sccc_cash_clousure AS sx 
+					JOIN sccc_setup AS st ON st.ad_org_id=sx.ad_org_id  
+					JOIN sccc_payment_method AS spm ON spm.sccc_setup_id=st.sccc_setup_id 
+						AND spm.fin_paymentmethod_id=pm.fin_paymentmethod_id
+						AND spm.em_sscrcc_detailed='Y'
+				WHERE sx.sccc_cash_clousure_id=ccl.sccc_cash_clousure_id
+			)
+			GROUP BY ccl.fin_paymentmethod_id, pm.name, ccl.amount
+		) LOOP
+			IF vRecord.detailedAmount <> vRecord.totalAmount THEN
+				RAISE EXCEPTION '%', 'El detalle metodo de pago '
+					||vRecord.paymentMethod
+					||' tiene diferencia.'; --OBTG:-20000--
+			END IF;
+		END LOOP;
+		
+		--sscccin_record - Validation_Process Extension Point
+		SELECT count(*) INTO v_count
+		FROM DUAL
+		where exists (select 1 from ad_ep_procedures where ad_extension_points_id = 'CC44E5178F434947B1B9A60719BE3B34');
+		IF (v_count=1) THEN
+			DECLARE
+				v_ep_instance VARCHAR2(32);
+				v_extension_point_id VARCHAR2(32) := 'CC44E5178F434947B1B9A60719BE3B34';
+
+			BEGIN
+				v_ep_instance := get_uuid();
+				AD_EP_INSTANCE_PARA_INSERT(v_ep_instance, v_extension_point_id, 'Record_ID',
+				vRecordID, NULL, NULL, NULL, NULL, NULL, NULL);
+				AD_EP_INSTANCE_PARA_INSERT(v_ep_instance, v_extension_point_id, 'DocAction',
+				vCashClosure.record, NULL, NULL, NULL, NULL, NULL, NULL);
+				AD_EP_INSTANCE_PARA_INSERT(v_ep_instance, v_extension_point_id, 'User',
+				vUserID, NULL, NULL, NULL, NULL, NULL, NULL);
+				-- PERFORM AD_EP_INSTANCE_PARA_INSERT(v_ep_instance, v_extension_point_id, 'Message',
+				-- NULL, NULL, NULL, NULL, NULL, NULL, '');
+				-- PERFORM AD_EP_INSTANCE_PARA_INSERT(v_ep_instance, v_extension_point_id, 'Result',
+				-- NULL, NULL, vResult, NULL, NULL, NULL, NULL);
+				AD_EXTENSION_POINT_HANDLER(v_ep_instance, v_extension_point_id);
+				SELECT p_number INTO vResult
+				FROM ad_ep_instance_para
+				WHERE ad_ep_instance_id = v_ep_instance
+				AND parametername LIKE 'Result';
+				SELECT p_text INTO v_Message
+				FROM ad_ep_instance_para
+				WHERE ad_ep_instance_id = v_ep_instance
+				AND parametername LIKE 'Message';
+
+				DELETE FROM ad_ep_instance_para
+				WHERE ad_ep_instance_id = v_ep_instance;
+			END;
+		END IF;
+
+
+		IF vCashClosure.record = 'SCCC_RE' THEN
+		
+			SELECT COALESCE(SUM(b.amount),0) INTO vPaymentIn FROM (
+				SELECT DISTINCT a.* FROM (
+					--Obtenemos las facturas
+					SELECT p.fin_payment_id, COALESCE(p.amount,0) AS amount
+					FROM fin_payment AS p
+						JOIN fin_payment_detail AS pd ON pd.fin_payment_id=p.fin_payment_id
+						JOIN fin_payment_scheduledetail AS psd ON psd.fin_payment_detail_id=pd.fin_payment_detail_id
+						JOIN fin_payment_schedule AS ps ON ps.fin_payment_schedule_id=psd.fin_payment_schedule_invoice
+						JOIN c_invoice AS i ON i.c_invoice_id=ps.c_invoice_id
+					WHERE p.status!='RPVOID' AND i.docstatus='CO' AND i.issotrx='Y'
+						AND p.paymentdate::DATE=vCashClosure.closingdate::DATE
+						AND i.dateinvoiced::DATE=vCashClosure.closingdate::DATE
+						AND p.c_doctype_id IN (
+							SELECT c_doctype_id
+							FROM ssccso_type_of_document
+							WHERE sccc_setup_id=vCashClosure.sccc_setup_id
+						)
+						AND p.amount>0
+					UNION
+					--Cobros de facturas de dias pasados
+					SELECT p.fin_payment_id, COALESCE(p.amount,0) AS amount
+					FROM fin_payment AS p
+						LEFT JOIN fin_payment_detail AS pd ON pd.fin_payment_id=p.fin_payment_id
+						LEFT JOIN fin_payment_scheduledetail AS psd ON psd.fin_payment_detail_id=pd.fin_payment_detail_id
+						LEFT JOIN fin_payment_schedule AS ps ON ps.fin_payment_schedule_id=psd.fin_payment_schedule_invoice
+						LEFT JOIN c_invoice AS i ON i.c_invoice_id=ps.c_invoice_id
+					WHERE p.status!='RPVOID'
+						AND p.paymentdate::DATE=vCashClosure.closingdate::DATE
+						AND i.dateinvoiced::DATE<vCashClosure.closingdate::DATE
+						AND p.c_doctype_id IN (
+							SELECT c_doctype_id
+							FROM ssccso_type_of_document
+							WHERE sccc_setup_id=vCashClosure.sccc_setup_id
+						)
+						AND p.amount>0
+					UNION
+					--Cobros no relacionados a facturas
+					SELECT p.fin_payment_id, COALESCE(p.amount,0) AS amount
+					FROM fin_payment AS p
+						JOIN fin_payment_detail AS pd ON pd.fin_payment_id=p.fin_payment_id
+						JOIN fin_payment_scheduledetail AS psd ON psd.fin_payment_detail_id=pd.fin_payment_detail_id
+					WHERE p.status!='RPVOID'
+						AND p.paymentdate::DATE=vCashClosure.closingdate::DATE
+						AND psd.fin_payment_schedule_invoice IS NULL
+						AND p.c_doctype_id IN (
+							SELECT c_doctype_id
+							FROM ssccso_type_of_document
+							WHERE sccc_setup_id=vCashClosure.sccc_setup_id
+						)
+						AND p.amount>0
+					UNION
+					--Obtenemos las notas de credito
+					SELECT p.fin_payment_id, COALESCE(p.amount,0) AS amount
+					FROM fin_payment AS p
+						LEFT JOIN fin_payment_detail AS pd ON pd.fin_payment_id=p.fin_payment_id
+						LEFT JOIN fin_payment_scheduledetail AS psd ON psd.fin_payment_detail_id=pd.fin_payment_detail_id
+						LEFT JOIN fin_payment_schedule AS ps ON ps.fin_payment_schedule_id=psd.fin_payment_schedule_invoice
+						LEFT JOIN c_invoice AS i ON i.c_invoice_id=ps.c_invoice_id
+					WHERE i.docstatus='CO' AND i.issotrx='Y'
+						AND i.dateinvoiced::DATE=vCashClosure.closingdate::DATE
+						AND i.c_doctype_id IN (
+							SELECT c_doctype_credit_notes_id
+							FROM sscccin_invoice_doctype
+							WHERE sccc_setup_id=vCashClosure.sccc_setup_id
+						)
+				) AS a
+			) AS b;
+
+			--Consultar en ventana de ingresos y egresos de caja
+            FOR vIncExp IN (
+			SELECT COALESCE(SUM(
+				CASE
+					WHEN type_of_operation = 'BPD' THEN deposit_amount --Cobro 
+					WHEN type_of_operation = 'BPW' THEN refund_amount*-1 --Pago
+					ELSE 0
+				END
+			),0) as amount ,type_of_operation
+			FROM ssccso_cash_inc_exp
+			WHERE status='PR' AND isreconciled='Y'
+				AND dateactual::DATE=vCashClosure.closingdate::DATE
+				AND c_doctype_id IN (
+					SELECT c_doctype_id
+					FROM ssccso_type_of_document
+					WHERE sccc_setup_id=vCashClosure.sccc_setup_id
+				)
+            GROUP BY type_of_operation
+            ) LOOP
+                IF (vIncExp.type_of_operation='BPW') THEN
+                    vExpenses := vIncExp.amount;
+                ELSEIF (vIncExp.type_of_operation='BPD')  THEN                
+                    vIncomes := vIncExp.amount;
+                END IF;
+            END LOOP;
+
+            vIncomeExpenses := vIncomes + vExpenses;
+
+			vTotal := vPaymentIn + vIncomeExpenses;
+			
+			SELECT COALESCE(SUM(ccl.amount),0) INTO vTotalLines
+			FROM sccc_cash_clousureline AS ccl
+				JOIN sccc_payment_method AS pm ON pm.fin_paymentmethod_id=ccl.fin_paymentmethod_id
+			WHERE pm.em_sscccin_difference='N' AND ccl.sccc_cash_clousure_id=vRecordID
+			    AND pm.sccc_setup_id=vCashClosure.sccc_setup_id;
+			
+			vDifference := vTotalLines - vTotal;
+			
+			--Actualizamos la linea de la diferencia
+			UPDATE sccc_cash_clousureline SET amount=vDifference
+			FROM sccc_payment_method
+			WHERE sccc_payment_method.fin_paymentmethod_id=sccc_cash_clousureline.fin_paymentmethod_id
+				AND sccc_cash_clousureline.sccc_cash_clousure_id=vRecordID
+				AND sccc_payment_method.sccc_setup_id=vCashClosure.sccc_setup_id
+				AND sccc_payment_method.em_sscccin_difference = 'Y';
+			
+			-- Sumar ingresos
+			SELECT COALESCE(SUM(ccl.amount),0) INTO vTotalIncomes
+			FROM sccc_cash_clousureline AS ccl
+				JOIN sccc_payment_method AS pm ON pm.fin_paymentmethod_id=ccl.fin_paymentmethod_id
+			WHERE pm.em_sscccin_difference='N' AND ccl.sccc_cash_clousure_id=vRecordID
+			    AND pm.sccc_setup_id=vCashClosure.sccc_setup_id AND ccl.typeaccount='INC';
+			
+			-- Sumar egresos
+			SELECT COALESCE(SUM(ccl.amount),0) INTO vTotalExpenses
+			FROM sccc_cash_clousureline AS ccl
+				JOIN sccc_payment_method AS pm ON pm.fin_paymentmethod_id=ccl.fin_paymentmethod_id
+			WHERE pm.em_sscccin_difference='N' AND ccl.sccc_cash_clousure_id=vRecordID
+			    AND pm.sccc_setup_id=vCashClosure.sccc_setup_id AND ccl.typeaccount='EXP';
+			
+			--Validar si existe ec.com.sidesoft.custom.closecash.advanced
+			SELECT COUNT(*) INTO vCheck FROM ad_module WHERE javapackage = 'ec.com.sidesoft.custom.closecash.advanced';
+			IF (vCheck > 0) THEN
+				SELECT COALESCE(SUM(ccl.amount),0) INTO vAmount
+    			FROM scca_cash_clousureline2 AS ccl
+    				JOIN sccc_payment_method AS pm ON pm.fin_paymentmethod_id=ccl.fin_paymentmethod_id
+    			WHERE pm.em_sscccin_difference='N' AND ccl.sccc_cash_clousure_id=vRecordID
+    			    AND pm.sccc_setup_id=vCashClosure.sccc_setup_id AND ccl.typeaccount='INC';
+				vTotalIncomes := vTotalIncomes + vAmount;
+				
+				-- Sumar egresos
+				SELECT COALESCE(SUM(ccl.amount),0) INTO vAmount
+    			FROM scca_cash_clousureline2 AS ccl
+    				JOIN sccc_payment_method AS pm ON pm.fin_paymentmethod_id=ccl.fin_paymentmethod_id
+    			WHERE pm.em_sscccin_difference='N' AND ccl.sccc_cash_clousure_id=vRecordID
+    			    AND pm.sccc_setup_id=vCashClosure.sccc_setup_id AND ccl.typeaccount='EXP';
+				vTotalExpenses := vTotalExpenses + vAmount;
+			END IF;
+			
+		-- Autor: Jolyt Mina
+		-- Ticket: 11783
+		-- Descripcion: Modificar el proceso 
+		-- para que cuando la suma de ingresos y egresos sean 0 entonces le permita registrar  y cambie el Estado doc a Registrado:
+		
+			/*
+			IF vTotalIncomes - vTotalExpenses = 0 THEN
+				RAISE_APPLICATION_ERROR(-20000,'@SCCC_TOTAL_ZERO@');
+			END IF;
+			*/
+			
+			--Actualizamos el cierre de caja
+			UPDATE sccc_cash_clousure SET docstatus='SCCC_RG',
+				totalincome=vTotalIncomes,
+				totalexpenses=vTotalExpenses+abs(vExpenses),
+				totalsales=vTotal,
+				difference=vDifference,
+				record='RE'
+			WHERE sccc_cash_clousure_id=vRecordID;
+		
+		ELSEIF vCashClosure.record = 'RE' AND vCashClosure.docstatus='SCCC_RG' THEN
+			UPDATE sccc_cash_clousure SET docstatus='DR',
+				totalincome=0,
+				totalexpenses=0,
+				totalsales=0,
+				difference=0,
+				record='SCCC_RE'
+			WHERE sccc_cash_clousure_id=vRecordID;
+		END IF;
+
+	 AD_UPDATE_PINSTANCE(pInstanceID, NULL, 'N', 1, '@Success@') ;
+		RETURN;
+    
+	END;
+	
+	EXCEPTION
+	WHEN OTHERS THEN
+    vResult:= '@ERROR=' || SQLERRM;
+    DBMS_OUTPUT.PUT_LINE(vResult);
+    AD_UPDATE_PINSTANCE(pInstanceID, NULL, 'N', 0, vResult);
+    RETURN;
+END SSCCCIN_RECORD
+]]></body>
+    </function>
+  </database>

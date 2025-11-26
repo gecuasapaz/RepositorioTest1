@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<compiereTrl baseLanguage="en_US" language="es_ES" table="AD_ELEMENT" version="">
+  <row id="0445B60E895A44A9A3AA81028C0A4DD1" trl="Y">
+    <value column="Name" isTrl="Y" original="Type of Document Credit Note">Tipo de Documento Nota de Crédito</value>
+    <value column="PrintName" isTrl="Y" original="Type of Document Credit Note">Tipo de Documento Nota de Crédito</value>
+    <value column="Description" isTrl="N" original=""/>
+    <value column="Help" isTrl="N" original=""/>
+    <value column="PO_Description" isTrl="N" original=""/>
+    <value column="PO_Help" isTrl="N" original=""/>
+    <value column="PO_Name" isTrl="N" original=""/>
+    <value column="PO_PrintName" isTrl="N" original=""/>
+  </row>
+  <row id="3266F2BFDBE14AA4A3CBE137A5F03B61" trl="N">
+    <value column="Name" isTrl="N" original="EM_Sscccin_Readonly">EM_Sscccin_Readonly</value>
+    <value column="PrintName" isTrl="Y" original="EM_SSCCCIN_ReadOnly">EM_Sscccin_Readonly</value>
+    <value column="Description" isTrl="N" original=""/>
+    <value column="Help" isTrl="N" original=""/>
+    <value column="PO_Description" isTrl="N" original=""/>
+    <value column="PO_Help" isTrl="N" original=""/>
+    <value column="PO_Name" isTrl="N" original=""/>
+    <value column="PO_PrintName" isTrl="N" original=""/>
+  </row>
+  <row id="387CE64934D34310BE90CD083B9A9CB0" trl="N">
+    <value column="Name" isTrl="Y" original="em_sscccin_valfinacc">Validar Cuenta Financiera</value>
+    <value column="PrintName" isTrl="Y" original="em_sscccin_valfinacc">Validar Cuenta Financiera</value>
+    <value column="Description" isTrl="N" original=""/>
+    <value column="Help" isTrl="N" original=""/>
+    <value column="PO_Description" isTrl="N" original=""/>
+    <value column="PO_Help" isTrl="N" original=""/>
+    <value column="PO_Name" isTrl="N" original=""/>
+    <value column="PO_PrintName" isTrl="N" original=""/>
+  </row>
+  <row id="3BB167584ED74691B023D4745E5CAD76" trl="Y">
+    <value column="Name" isTrl="Y" original="Maximum Difference">Máxima Diferencia</value>
+    <value column="PrintName" isTrl="Y" original="Maximum Difference">Máxima Diferencia</value>
+    <value column="Description" isTrl="N" original=""/>
+    <value column="Help" isTrl="N" original=""/>
+    <value column="PO_Description" isTrl="N" original=""/>
+    <value column="PO_Help" isTrl="N" original=""/>
+    <value column="PO_Name" isTrl="N" original=""/>
+    <value column="PO_PrintName" isTrl="N" original=""/>
+  </row>
+  <row id="442388E65A334BF7B8FED59912D89203" trl="Y">
+    <value column="Name" isTrl="Y" original="Reference Nº">Depósito</value>
+    <value column="PrintName" isTrl="Y" original="Reference Nº">Depósito</value>
+    <value column="Description" isTrl="N" original=""/>
+    <value column="Help" isTrl="N" original=""/>
+    <value column="PO_Description" isTrl="N" original=""/>
+    <value column="PO_Help" isTrl="N" original=""/>
+    <value column="PO_Name" isTrl="N" original=""/>
+    <value column="PO_PrintName" isTrl="N" original=""/>
+  </row>
+  <row id="76F18922987F4A46910EEF07D6629DE2" trl="N">
+    <value column="Name" isTrl="Y" original="em_sscccin_valdeposit">Validar Deposito</value>
+    <value column="PrintName" isTrl="Y" original="em_sscccin_valdeposit">Validar Deposito</value>
+    <value column="Description" isTrl="N" original=""/>
+    <value column="Help" isTrl="N" original=""/>
+    <value column="PO_Description" isTrl="N" original=""/>
+    <value column="PO_Help" isTrl="N" original=""/>
+    <value column="PO_Name" isTrl="N" original=""/>
+    <value column="PO_PrintName" isTrl="N" original=""/>
+  </row>
+  <row id="8A94C65ED86140EA9EB791ABA196DD5F" trl="Y">
+    <value column="Name" isTrl="Y" original="Toggle">Alternar</value>
+    <value column="PrintName" isTrl="Y" original="EM_Sscccin_Toggledocstatus">Alternar</value>
+    <value column="Description" isTrl="N" original=""/>
+    <value column="Help" isTrl="N" original=""/>
+    <value column="PO_Description" isTrl="N" original=""/>
+    <value column="PO_Help" isTrl="N" original=""/>
+    <value column="PO_Name" isTrl="N" original=""/>
+    <value column="PO_PrintName" isTrl="N" original=""/>
+  </row>
+  <row id="929BA798B0B04C5B9F66302AB5F5F3D6" trl="Y">
+    <value column="Name" isTrl="Y" original="Deposit Nº">Nº Deposito</value>
+    <value column="PrintName" isTrl="Y" original="Deposit Nº">Nº Deposito</value>
+    <value column="Description" isTrl="N" original=""/>
+    <value column="Help" isTrl="N" original=""/>
+    <value column="PO_Description" isTrl="N" original=""/>
+    <value column="PO_Help" isTrl="N" original=""/>
+    <value column="PO_Name" isTrl="N" original=""/>
+    <value column="PO_PrintName" isTrl="N" original=""/>
+  </row>
+  <row id="B572B5FA50EA44EF939C5EDF3C3A39D4" trl="N">
+    <value column="Name" isTrl="N" original="EM_Sscccin_Processed">EM_Sscccin_Processed</value>
+    <value column="PrintName" isTrl="N" original="EM_Sscccin_Processed">EM_Sscccin_Processed</value>
+    <value column="Description" isTrl="N" original=""/>
+    <value column="Help" isTrl="N" original=""/>
+    <value column="PO_Description" isTrl="N" original=""/>
+    <value column="PO_Help" isTrl="N" original=""/>
+    <value column="PO_Name" isTrl="N" original=""/>
+    <value column="PO_PrintName" isTrl="N" original=""/>
+  </row>
+  <row id="BF696C88FB77419C87E8135C684AAC5C" trl="N">
+    <value column="Name" isTrl="N" original="Sccc_Setup_ID">Sccc_Setup_ID</value>
+    <value column="PrintName" isTrl="N" original="Sccc_Setup_ID">Sccc_Setup_ID</value>
+    <value column="Description" isTrl="N" original=""/>
+    <value column="Help" isTrl="N" original=""/>
+    <value column="PO_Description" isTrl="N" original=""/>
+    <value column="PO_Help" isTrl="N" original=""/>
+    <value column="PO_Name" isTrl="N" original=""/>
+    <value column="PO_PrintName" isTrl="N" original=""/>
+  </row>
+  <row id="C2F4518329EA4BACB6FF46009FB37607" trl="Y">
+    <value column="Name" isTrl="Y" original="Difference">Diferencia</value>
+    <value column="PrintName" isTrl="Y" original="Difference">Diferencia</value>
+    <value column="Description" isTrl="N" original=""/>
+    <value column="Help" isTrl="N" original=""/>
+    <value column="PO_Description" isTrl="N" original=""/>
+    <value column="PO_Help" isTrl="N" original=""/>
+    <value column="PO_Name" isTrl="N" original=""/>
+    <value column="PO_PrintName" isTrl="N" original=""/>
+  </row>
+  <row id="CE19EF291C22491793585B7E1A5ED616" trl="Y">
+    <value column="Name" isTrl="Y" original="Sales Document Type">Tipo de Documento de Venta</value>
+    <value column="PrintName" isTrl="Y" original="Sales Document Type">Tipo de Documento de Venta</value>
+    <value column="Description" isTrl="N" original=""/>
+    <value column="Help" isTrl="N" original=""/>
+    <value column="PO_Description" isTrl="N" original=""/>
+    <value column="PO_Help" isTrl="N" original=""/>
+    <value column="PO_Name" isTrl="N" original=""/>
+    <value column="PO_PrintName" isTrl="N" original=""/>
+  </row>
+  <row id="DFC2299D000F475D8B39B37D0432534F" trl="N">
+    <value column="Name" isTrl="N" original="Sscccin_Invoice_Doctype_ID">Sscccin_Invoice_Doctype_ID</value>
+    <value column="PrintName" isTrl="N" original="Sscccin_Invoice_Doctype_ID">Sscccin_Invoice_Doctype_ID</value>
+    <value column="Description" isTrl="N" original=""/>
+    <value column="Help" isTrl="N" original=""/>
+    <value column="PO_Description" isTrl="N" original=""/>
+    <value column="PO_Help" isTrl="N" original=""/>
+    <value column="PO_Name" isTrl="N" original=""/>
+    <value column="PO_PrintName" isTrl="N" original=""/>
+  </row>
+  <row id="EB46DB4494584997A05C5B942E5A5FC9" trl="Y">
+    <value column="Name" isTrl="Y" original="Cancellation Document Type">Tipo de Documento Anulación</value>
+    <value column="PrintName" isTrl="Y" original="Cancellation Document Type">Tipo de Documento Anulación</value>
+    <value column="Description" isTrl="N" original=""/>
+    <value column="Help" isTrl="N" original=""/>
+    <value column="PO_Description" isTrl="N" original=""/>
+    <value column="PO_Help" isTrl="N" original=""/>
+    <value column="PO_Name" isTrl="N" original=""/>
+    <value column="PO_PrintName" isTrl="N" original=""/>
+  </row>
+  <row id="F7A4A4431C9C4BEBAB1F62A745E607B6" trl="N">
+    <value column="Name" isTrl="N" original="EM_Sscccin_Procesing">EM_Sscccin_Procesing</value>
+    <value column="PrintName" isTrl="N" original="EM_Sscccin_Procesing">EM_Sscccin_Procesing</value>
+    <value column="Description" isTrl="N" original=""/>
+    <value column="Help" isTrl="N" original=""/>
+    <value column="PO_Description" isTrl="N" original=""/>
+    <value column="PO_Help" isTrl="N" original=""/>
+    <value column="PO_Name" isTrl="N" original=""/>
+    <value column="PO_PrintName" isTrl="N" original=""/>
+  </row>
+</compiereTrl>

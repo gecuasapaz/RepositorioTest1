@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+  <database name="TRIGGER SSCCCIN_CASH_CLOUSURE_TRG">
+    <trigger name="SSCCCIN_CASH_CLOUSURE_TRG" table="SCCC_CASH_CLOUSURE" fires="before" insert="true" update="true" delete="false" foreach="row">
+      <body><![CDATA[	vCheck NUMBER;
+ v_fecha_cierre date;
+ v_respuesta varchar(500);
+    BEGIN
+
+		IF DELETING THEN
+			RETURN OLD;
+		ELSE
+			IF INSERTING OR (
+				UPDATING AND (
+					:OLD.ad_org_id != :NEW.ad_org_id
+					OR :OLD.closingdate::DATE != :NEW.closingdate::DATE
+					OR :OLD.sccc_setup_id != :NEW.sccc_setup_id
+				)
+			) THEN
+				SELECT COUNT(*) INTO vCheck
+				FROM sccc_cash_clousure
+				WHERE ad_org_id=:NEW.ad_org_id
+					AND closingdate::DATE=:NEW.closingdate::DATE
+					AND sccc_setup_id=:NEW.sccc_setup_id;
+				
+				IF vCheck>0 THEN
+					RAISE_APPLICATION_ERROR(-20000, '@Sscccin_OnlyOneCashClosure@');
+				END IF;
+			END IF;
+			
+			RETURN NEW;
+		END IF;
+END SSCCCIN_CASH_CLOUSURE_TRG
+]]></body>
+    </trigger>
+  </database>

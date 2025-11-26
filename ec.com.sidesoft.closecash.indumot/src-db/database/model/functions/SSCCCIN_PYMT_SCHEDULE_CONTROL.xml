@@ -1,0 +1,76 @@
+<?xml version="1.0"?>
+  <database name="FUNCTION SSCCCIN_PYMT_SCHEDULE_CONTROL">
+    <function name="SSCCCIN_PYMT_SCHEDULE_CONTROL" type="NULL">
+      <parameter name="p_ep_instance" type="VARCHAR" mode="in">
+        <default/>
+      </parameter>
+      <body><![CDATA[TYPE RECORD IS REF CURSOR;
+    Cur_Params RECORD;
+    vCashClosure RECORD;
+    Cur_Invoices RECORD;
+
+    p_record_id VARCHAR(60);
+    p_docAction VARCHAR(60);
+    p_user VARCHAR(60);
+    v_ResultStr VARCHAR2(2000):='';
+    v_count NUMBER:=0;
+    v_Message VARCHAR2(2000):='';
+
+BEGIN
+
+    FOR Cur_Params IN (
+        SELECT *
+        FROM ad_ep_instance_para
+        WHERE ad_ep_instance_id = p_ep_instance
+    ) LOOP
+        IF cur_params.parametername = 'DocAction' THEN
+            p_docaction := Cur_Params.p_string;
+        ELSIF (cur_params.parametername = 'Record_ID') THEN
+            p_record_id := cur_params.p_string;
+        ELSIF (cur_params.parametername = 'User') THEN
+            p_user := cur_params.p_string;
+        END IF;
+    END LOOP;
+    
+		--Obtenemos el cierre de caja
+		SELECT * INTO vCashClosure
+		FROM sccc_cash_clousure
+		WHERE sccc_cash_clousure_id=p_record_id;
+
+    IF p_docaction = 'SCCC_RE' THEN
+        FOR Cur_Invoices IN (
+
+          SELECT documentno,TRIM(bp.name) as customer,TRUNC(ps.expecteddate) AS datetrx,ps.outstandingamt
+          FROM c_invoice i
+            JOIN fin_payment_schedule ps ON ps.c_invoice_id = i.c_invoice_id
+            JOIN c_bpartner bp ON bp.c_bpartner_id = i.c_bpartner_id
+          WHERE i.docstatus='CO' AND i.issotrx='Y'
+            AND TRUNC(ps.expecteddate) = TRUNC(vCashClosure.closingdate)
+            AND (EXISTS (SELECT 1
+                        FROM Sccc_Setup ss
+                          JOIN sscccin_invoice_doctype sd ON sd.Sccc_Setup_ID=ss.Sccc_Setup_ID
+                        WHERE sd.C_Doctype_Credit_Notes_ID = i.C_DocType_id 
+                          AND ss.Sccc_Setup_ID = vCashClosure.Sccc_Setup_ID
+                          AND ss.paymentstodate = 'Y'
+                        )
+                OR EXISTS (SELECT 1
+                        FROM Sccc_Setup ss
+                          JOIN sscccin_invoice_doctype sd ON sd.Sccc_Setup_ID=ss.Sccc_Setup_ID
+                        WHERE sd.C_Doctype_Sales_ID = i.C_DocType_id 
+                          AND ss.Sccc_Setup_ID = vCashClosure.Sccc_Setup_ID
+                          AND ss.paymentstodate = 'Y'
+                        ))
+            AND COALESCE(ps.outstandingamt,0) > 0
+        ) LOOP
+          v_Message := 'LA FACTURA '||Cur_Invoices.documentno||', DEL CLIENTE '||Cur_Invoices.customer||', TIENE UNA CUOTA O UN VALOR PENDIENTE DE PAGO CON LA FECHA '||Cur_Invoices.datetrx||', REALIZAR EL COBRO ANTES DE CERRAR.';
+          RAISE_APPLICATION_ERROR(-20000,v_Message);
+        END LOOP;
+    END IF;
+    
+    EXCEPTION WHEN OTHERS THEN
+    DBMS_OUTPUT.PUT_LINE('sscccin_pymt_schedule_control exception: '|| v_ResultStr);
+    RAISE;
+END SSCCCIN_PYMT_SCHEDULE_CONTROL
+]]></body>
+    </function>
+  </database>

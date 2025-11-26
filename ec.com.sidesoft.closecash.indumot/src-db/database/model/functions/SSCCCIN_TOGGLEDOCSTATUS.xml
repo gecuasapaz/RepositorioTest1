@@ -1,0 +1,64 @@
+<?xml version="1.0"?>
+  <database name="FUNCTION SSCCCIN_TOGGLEDOCSTATUS">
+    <function name="SSCCCIN_TOGGLEDOCSTATUS" type="NULL">
+      <parameter name="pinstanceid" type="VARCHAR" mode="in">
+        <default/>
+      </parameter>
+      <body><![CDATA[vResult VARCHAR2(2000) := '';
+	vRecord RECORD;
+	vRecordID VARCHAR2(32);
+	vUserID VARCHAR2(32);
+
+BEGIN
+
+	--  Update AD_PInstance
+	DBMS_OUTPUT.PUT_LINE('Updating PInstance - Processing ' || pInstanceID) ;
+	vResult := 'PInstanceNotFound';
+ AD_UPDATE_PINSTANCE(pInstanceID, NULL, 'Y', NULL, NULL) ;
+
+	BEGIN
+  
+		FOR vRecord IN (
+			SELECT
+				i.Record_ID,
+				i.AD_User_ID,
+				p.ParameterName,
+				p.P_String,
+				p.P_Number,
+				p.P_Date,
+				p.AD_Client_ID,
+				p.AD_Org_ID,
+				p.CreatedBy        
+			FROM AD_PInstance AS i
+				LEFT JOIN AD_PInstance_Para AS p ON i.AD_PInstance_ID = p.AD_PInstance_ID
+			WHERE i.AD_PInstance_ID = pInstanceID
+			ORDER BY p.SeqNo
+      ) LOOP
+			vRecordID := vRecord.Record_ID;
+			vUserID := vRecord.AD_User_ID; 
+		END LOOP;
+
+		UPDATE sccc_cash_clousure SET
+			docstatus='DR',
+			record='SCCC_RE',
+			totalincome=0,
+			totalexpenses=0,
+			totalsales=0,
+			difference=0
+		WHERE sccc_cash_clousure_id=vRecordID;
+		
+	 AD_UPDATE_PINSTANCE(pInstanceID, NULL, 'N', 1, '@Success@') ;
+		RETURN;
+    
+	END;
+	
+	EXCEPTION
+	WHEN OTHERS THEN
+    vResult:= '@ERROR=' || SQLERRM;
+    DBMS_OUTPUT.PUT_LINE(vResult);
+    AD_UPDATE_PINSTANCE(pInstanceID, NULL, 'N', 0, vResult);
+    RETURN;
+END SSCCCIN_TOGGLEDOCSTATUS
+]]></body>
+    </function>
+  </database>

@@ -1,0 +1,52 @@
+<?xml version="1.0"?>
+  <database name="FUNCTION SSCCCIN_VALIDAR_ANTICIPOS">
+    <function name="SSCCCIN_VALIDAR_ANTICIPOS" type="VARCHAR">
+      <parameter name="p_local" type="VARCHAR" mode="in">
+        <default/>
+      </parameter>
+      <parameter name="p_fecha" type="TIMESTAMP" mode="in">
+        <default/>
+      </parameter>
+      <body><![CDATA[v_resultado varchar(500);
+    v_documentos_pendientes NUMBER;
+    v_det_docs varchar(1000);
+    t record;
+
+BEGIN
+  select count(*)
+    into v_documentos_pendientes
+    from c_invoice i,fin_payment_schedule ps,c_doctype td
+    where i.c_invoice_id=ps.c_invoice_id
+    and ps.em_ssppi_shareno=0
+    and ps.outstandingamt!=0
+    and date(ps.duedate)=p_fecha
+    and i.ad_org_id=p_local
+    and i.issotrx='Y'
+    and td.em_eei_is_edoc='Y'
+    and i.c_doctype_id=td.c_doctype_id
+    ;
+    if v_documentos_pendientes=0 then
+        v_resultado:='OK';
+    else
+        v_det_docs:='';
+        for t in
+        (
+            select i.documentno
+            from c_invoice i,fin_payment_schedule ps
+            where i.c_invoice_id=ps.c_invoice_id
+            and ps.em_ssppi_shareno=0
+            and ps.outstandingamt!=0
+            and ps.duedate::date=p_fecha::date
+            and i.ad_org_id=p_local
+        )loop
+            v_det_docs:=v_det_docs||t.documentno||', ';
+        end loop
+        ;
+        
+        v_resultado:='MIENTRAS LOS DOCUMENTOS: '||v_det_docs||' TENGAN PENDIENTE LA ENTRADA NO SE PUEDE GENERAR EL CIERRE';
+    end if;
+    return v_resultado;
+END SSCCCIN_VALIDAR_ANTICIPOS
+]]></body>
+    </function>
+  </database>

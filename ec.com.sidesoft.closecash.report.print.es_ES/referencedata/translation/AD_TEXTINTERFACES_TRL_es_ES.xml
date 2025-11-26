@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<compiereTrl baseLanguage="en_US" language="es_ES" table="AD_TEXTINTERFACES" version="">
+  <row id="003615AC1EDA45CDA8C9008FCDD1B9EA" trl="N">
+    <value column="Text" isTrl="N" original="Cliente">Cliente</value>
+  </row>
+  <row id="00634F5A99B7472E8225329658450AE2" trl="N">
+    <value column="Text" isTrl="N" original="Ingresos y Egreso caja (_)">Ingresos y Egreso caja (_)</value>
+  </row>
+  <row id="043850C0D1FF4096BEC152B55ADDE855" trl="N">
+    <value column="Text" isTrl="N" original="Fecha:">Fecha:</value>
+  </row>
+  <row id="0A10A03E1491424EA4D60C136FBC7319" trl="N">
+    <value column="Text" isTrl="N" original="Revisado">Revisado</value>
+  </row>
+  <row id="18EE3CF2EBBE461EB1013AFF7DE19130" trl="N">
+    <value column="Text" isTrl="N" original="Fecha de impresión:">Fecha de impresión:</value>
+  </row>
+  <row id="1CC277ABCCBD44BAA0A7927E2BB6A2CD" trl="N">
+    <value column="Text" isTrl="N" original="Fecha de impresión:">Fecha de impresión:</value>
+  </row>
+  <row id="1F9014913F4C4E39BB6DBD3A32889E9A" trl="N">
+    <value column="Text" isTrl="N" original="TIPO DE CRÉDITO">TIPO DE CRÉDITO</value>
+  </row>
+  <row id="1FDABB5E113347A99208001839C38B93" trl="N">
+    <value column="Text" isTrl="N" original="CIERRE DE CAJA">CIERRE DE CAJA</value>
+  </row>
+  <row id="22659FA869844D8EA249D78B4784379F" trl="N">
+    <value column="Text" isTrl="N" original="Documento">Documento</value>
+  </row>
+  <row id="230BE93D49D54885B990333D131AAD38" trl="N">
+    <value column="Text" isTrl="N" original="Tipo de documento">Tipo de documento</value>
+  </row>
+  <row id="34BF38F77738403BB79C3301524E5115" trl="N">
+    <value column="Text" isTrl="N" original="Diferencias">Diferencias</value>
+  </row>
+  <row id="3C1AFD4522294A759AA5AE5627A7AFC5" trl="N">
+    <value column="Text" isTrl="N" original="Total a Depositar">Total a Depositar</value>
+  </row>
+  <row id="3D56270DD9094DDB8D4FD65DCDEC2AA1" trl="N">
+    <value column="Text" isTrl="N" original="Revisado">Revisado</value>
+  </row>
+  <row id="413FC520D4B94889A959BFFD8B906556" trl="N">
+    <value column="Text" isTrl="N" original="Efectivo">Efectivo</value>
+  </row>
+  <row id="4A62BE9B5A354081B7F16BC19E549B31" trl="N">
+    <value column="Text" isTrl="N" original="Fecha:">Fecha:</value>
+  </row>
+  <row id="4CFA3001E22C4BA2AECEE68E21D8D150" trl="N">
+    <value column="Text" isTrl="N" original="Documento">Documento</value>
+  </row>
+  <row id="53CFA96202994A8A86FADDA361A3C524" trl="N">
+    <value column="Text" isTrl="N" original="Depósito">Depósito</value>
+  </row>
+  <row id="54ECD43CD48E42EB9212E6DB55C1C580" trl="N">
+    <value column="Text" isTrl="N" original="Elaborado">Elaborado</value>
+  </row>
+  <row id="599D97A07079413285E5CFD7871F763B" trl="N">
+    <value column="Text" isTrl="N" original="LOTE">LOTE</value>
+  </row>
+  <row id="5BF54A03BB51498E909FA47ABB0452F5" trl="N">
+    <value column="Text" isTrl="N" original="Valor">Valor</value>
+  </row>
+  <row id="61CAC7D0AF304AC2BF089C66BED3BCE5" trl="N">
+    <value column="Text" isTrl="N" original="BANCO EMISOR">BANCO EMISOR</value>
+  </row>
+  <row id="6CD888C3B36D42FD8E49BD1B943F6108" trl="N">
+    <value column="Text" isTrl="N" original="Total a Depositar">Total a Depositar</value>
+  </row>
+  <row id="6F47315B4FA14660834A330C515286A2" trl="N">
+    <value column="Text" isTrl="N" original="VALOR">VALOR</value>
+  </row>
+  <row id="71FFDC0E5B454E2E9489F86986F954B9" trl="N">
+    <value column="Text" isTrl="N" original="Tarjeta">Tarjeta</value>
+  </row>
+  <row id="7AD1D44C1C7F46769234187BE6CB1649" trl="N">
+    <value column="Text" isTrl="N" original="Tipo de documento">Tipo de documento</value>
+  </row>
+  <row id="835B1B6170844AF0A1270D66C414053D" trl="N">
+    <value column="Text" isTrl="N" original="TARJETA">TARJETA</value>
+  </row>
+  <row id="86FFC0E2D5AE4003B6565BA37F6A4832" trl="N">
+    <value column="Text" isTrl="N" original="Usuario:">Usuario:</value>
+  </row>
+  <row id="97226EF6FB054B0EA719B0510BA6DDA0" trl="N">
+    <value column="Text" isTrl="N" original="CIERRE DE CAJA">CIERRE DE CAJA</value>
+  </row>
+  <row id="99202E6C3AE4452FB81DC11E07AAEFE5" trl="N">
+    <value column="Text" isTrl="N" original="Ingresos y Egreso caja (_)">Ingresos y Egreso caja (_)</value>
+  </row>
+  <row id="9A0263829A914D55A107AEBF9DF2E2BA" trl="N">
+    <value column="Text" isTrl="N" original="Mas información:">Mas información:</value>
+  </row>
+  <row id="9D9CB0B08E6A4F17BC0766092AE8450E" trl="N">
+    <value column="Text" isTrl="N" original="BANCO EMISOR">BANCO EMISOR</value>
+  </row>
+  <row id="9EDEB50DBDF84D03A4E5161313151DC4" trl="N">
+    <value column="Text" isTrl="N" original="TIPO DE CRÉDITO">TIPO DE CRÉDITO</value>
+  </row>
+  <row id="A0FF220D485F449AAAA6B33B87025D86" trl="N">
+    <value column="Text" isTrl="N" original="Tarjeta">Tarjeta</value>
+  </row>
+  <row id="A131459584D84287839465FB06945CC8" trl="N">
+    <value column="Text" isTrl="N" original="Efectivo">Efectivo</value>
+  </row>
+  <row id="A461AD88267F4F2384621F35415DCCB1" trl="N">
+    <value column="Text" isTrl="N" original="Diferencias">Diferencias</value>
+  </row>
+  <row id="A5A3FDD4747F4DA9B3BABBA108F55FE6" trl="N">
+    <value column="Text" isTrl="N" original="Otros Cobros">Otros Cobros</value>
+  </row>
+  <row id="A5F5994334E5430FA6B1B371AFD9C4FE" trl="N">
+    <value column="Text" isTrl="N" original="Usuario:">Usuario:</value>
+  </row>
+  <row id="A790F618193E497C907847ABB72C71F5" trl="N">
+    <value column="Text" isTrl="N" original="Cobros Contado">Cobros Contado</value>
+  </row>
+  <row id="A7B0772E6CA54120A3738FD3FD2E8C3C" trl="N">
+    <value column="Text" isTrl="N" original="Transferencia">Transferencia</value>
+  </row>
+  <row id="AF0D83D0364348058095DD5011AC3A88" trl="N">
+    <value column="Text" isTrl="N" original="Método de pago">Método de pago</value>
+  </row>
+  <row id="AF1C10DB963748038C172E5815C07893" trl="N">
+    <value column="Text" isTrl="N" original="Transferencia">Transferencia</value>
+  </row>
+  <row id="B4D52470BEF04EF2838EFBF094390589" trl="N">
+    <value column="Text" isTrl="N" original="Mas información:">Mas información:</value>
+  </row>
+  <row id="B7AB64A10B7D4C43BE1F65DF2C27B1FB" trl="N">
+    <value column="Text" isTrl="N" original="Cheque">Cheque</value>
+  </row>
+  <row id="CC9A26CE3FA44801BB1ED5C9C2A21A49" trl="N">
+    <value column="Text" isTrl="N" original="Cobros Contado">Cobros Contado</value>
+  </row>
+  <row id="D4EC3187DAD343D285FD0B8FD0DA00A1" trl="N">
+    <value column="Text" isTrl="N" original="Local:">Local:</value>
+  </row>
+  <row id="D6C39AF0CE314D748EF99A01D130A46C" trl="N">
+    <value column="Text" isTrl="N" original="VALOR">VALOR</value>
+  </row>
+  <row id="DBF09DF213F64CC68E5B05AC6DCCC124" trl="N">
+    <value column="Text" isTrl="N" original="Valor">Valor</value>
+  </row>
+  <row id="DCE5471117924B148989C398D2140872" trl="N">
+    <value column="Text" isTrl="N" original="Depósito">Depósito</value>
+  </row>
+  <row id="EB0D8EAF12DD4E9996D9223A06EE940B" trl="N">
+    <value column="Text" isTrl="N" original="Cliente">Cliente</value>
+  </row>
+  <row id="EB1E25B9EAE541EF99C031ED57161357" trl="N">
+    <value column="Text" isTrl="N" original="Método de pago">Método de pago</value>
+  </row>
+  <row id="ED262C81841341C4B892A2B3448933A5" trl="N">
+    <value column="Text" isTrl="N" original="Total Ingresos">Total Ingresos</value>
+  </row>
+  <row id="EF2C0F3318B64348ACDE3D081C43D606" trl="N">
+    <value column="Text" isTrl="N" original="&lt;b&gt;PAG. &lt;/b&gt;">&lt;b&gt;PAG. &lt;/b&gt;</value>
+  </row>
+  <row id="F0A82AA430EE4A28A0C203D5F817E1A6" trl="N">
+    <value column="Text" isTrl="N" original="Cheque">Cheque</value>
+  </row>
+  <row id="F0CCE7CBB5EF433792C70F2B84733EB7" trl="N">
+    <value column="Text" isTrl="N" original="TARJETA">TARJETA</value>
+  </row>
+  <row id="F15D9EB6F2794DC681438BE9C8BC2461" trl="N">
+    <value column="Text" isTrl="N" original="LOTE">LOTE</value>
+  </row>
+  <row id="F771221968964CC0B93039B26B9F8283" trl="N">
+    <value column="Text" isTrl="N" original="&lt;b&gt;PAG. &lt;/b&gt;">&lt;b&gt;PAG. &lt;/b&gt;</value>
+  </row>
+  <row id="F784DF8264A54CFD884AC8DCB4F71DA5" trl="N">
+    <value column="Text" isTrl="N" original="Local:">Local:</value>
+  </row>
+  <row id="F8AE9E4B8E474C24B83AD2BA9100492E" trl="N">
+    <value column="Text" isTrl="N" original="Otros Cobros">Otros Cobros</value>
+  </row>
+  <row id="FD5E6891A5F9441C96C323689C98A196" trl="N">
+    <value column="Text" isTrl="N" original="Elaborado">Elaborado</value>
+  </row>
+  <row id="FFBDEAE7D9F0489CB698A1512983CCB3" trl="N">
+    <value column="Text" isTrl="N" original="Total Ingresos">Total Ingresos</value>
+  </row>
+</compiereTrl>

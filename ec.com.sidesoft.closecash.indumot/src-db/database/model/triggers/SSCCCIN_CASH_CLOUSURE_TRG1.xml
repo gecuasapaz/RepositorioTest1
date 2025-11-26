@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+  <database name="TRIGGER SSCCCIN_CASH_CLOUSURE_TRG1">
+    <trigger name="SSCCCIN_CASH_CLOUSURE_TRG1" table="SCCC_CASH_CLOUSURE" fires="before" insert="false" update="true" delete="false" foreach="row">
+      <body><![CDATA[    vRecord RECORD; -- Declaración de la variable para almacenar una fila
+BEGIN
+    -- Verifica si los disparadores están deshabilitados
+    IF AD_isTriggerEnabled() = 'N' THEN
+        IF DELETING THEN
+            RETURN OLD;
+        ELSE
+            RETURN NEW;
+        END IF;
+    END IF;
+
+    -- Operación específica para UPDATE
+    IF UPDATING THEN
+        -- Recupera el registro correspondiente
+        SELECT *
+        INTO vRecord
+        FROM sccc_cash_clousure c
+        WHERE c.sccc_cash_clousure_id = :NEW.sccc_cash_clousure_id;
+
+		IF (:NEW.em_sscccin_procesing = 'Y' AND :NEW.docstatus = 'SCCC_RG') AND (:NEW.process_date < :NEW.closingdate) THEN
+       		RAISE_APPLICATION_ERROR(-20000, '@Sscccin_ProCashClose@');
+		END IF;
+
+    END IF;
+
+    -- Devolver el registro correspondiente según la operación
+    IF DELETING THEN
+        RETURN OLD;
+    ELSE
+        RETURN NEW;
+    END IF;
+END SSCCCIN_CASH_CLOUSURE_TRG1
+]]></body>
+    </trigger>
+  </database>

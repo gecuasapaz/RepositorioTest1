@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<compiereTrl baseLanguage="en_US" language="es_ES" table="AD_REF_LIST" version="">
+  <row id="1048694DF84D4FD3A1A3CAE8CF1A9BC7" trl="Y">
+    <value column="Name" isTrl="Y" original="Processed">Procesado</value>
+    <value column="Description" isTrl="N" original=""/>
+  </row>
+  <row id="10DFC08CE2AE49D4A78D76E31A3E00AC" trl="Y">
+    <value column="Name" isTrl="Y" original="Lock">Bloquear</value>
+    <value column="Description" isTrl="N" original=""/>
+  </row>
+  <row id="1E6354EFCD5B474EB66CABB7624B0137" trl="Y">
+    <value column="Name" isTrl="Y" original="Draft">Borrador</value>
+    <value column="Description" isTrl="N" original=""/>
+  </row>
+  <row id="5EF605B7A0C6425D8D7870A577EC9E22" trl="Y">
+    <value column="Name" isTrl="Y" original="Transfer">Transferencia</value>
+    <value column="Description" isTrl="N" original=""/>
+  </row>
+  <row id="929AA82B3F484FCC8DE177605F196B28" trl="Y">
+    <value column="Name" isTrl="Y" original="Pos Transfers">Transferencias Pos</value>
+    <value column="Description" isTrl="N" original=""/>
+  </row>
+  <row id="61EAC0EB88754543BE927108BDC6FCB1" trl="Y">
+    <value column="Name" isTrl="Y" original="Registered">Registrado</value>
+    <value column="Description" isTrl="N" original=""/>
+  </row>
+  <row id="94200A6EC6394A789866CFA0BC0C6AC6" trl="Y">
+    <value column="Name" isTrl="Y" original="Reactivate">Reactivar</value>
+    <value column="Description" isTrl="N" original=""/>
+  </row>
+  <row id="FF1350628E6A471AB31C4296C8985F95" trl="Y">
+    <value column="Name" isTrl="Y" original="Deposit">Depósito</value>
+    <value column="Description" isTrl="N" original=""/>
+  </row>
+</compiereTrl>

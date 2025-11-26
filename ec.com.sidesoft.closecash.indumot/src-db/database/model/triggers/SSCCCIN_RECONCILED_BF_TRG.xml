@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+  <database name="TRIGGER SSCCCIN_RECONCILED_BF_TRG">
+    <trigger name="SSCCCIN_RECONCILED_BF_TRG" table="FIN_FINACC_TRANSACTION" fires="before" insert="true" update="false" delete="false" foreach="row">
+      <body><![CDATA[	vPaymentMethod RECORD;
+	v_result  character varying;
+	v_payment_id  character varying;
+	v_reference  character varying;
+
+BEGIN
+	IF INSERTING THEN
+		SELECT pm.*, p.referenceno INTO vPaymentMethod
+		FROM fin_payment AS p
+			JOIN fin_paymentmethod AS pm ON pm.fin_paymentmethod_id=p.fin_paymentmethod_id
+		WHERE p.fin_payment_id=:NEW.fin_payment_id;
+		IF vPaymentMethod.em_scca_type_payment = 'CA' THEN
+			:NEW.em_ssccr_reconciled := 'N';
+			:NEW.em_sscccin_reference := vPaymentMethod.referenceno;
+		END IF;
+		
+		IF :NEW.em_sscccin_reference is null THEN
+			:NEW.em_sscccin_reference := vPaymentMethod.referenceno;
+		END IF;
+	END IF;
+	
+	
+END SSCCCIN_RECONCILED_BF_TRG
+]]></body>
+    </trigger>
+  </database>

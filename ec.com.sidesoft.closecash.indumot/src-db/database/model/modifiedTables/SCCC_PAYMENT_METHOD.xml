@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+  <database name="MODIFIED TABLE SCCC_PAYMENT_METHOD">
+    <table name="SCCC_PAYMENT_METHOD" primaryKey="SCCC_PAYMENT_METHOD_KEY">
+      <column name="EM_SSCCCIN_DIFFERENCE" primaryKey="false" required="true" type="CHAR" size="1" autoIncrement="false">
+        <default><![CDATA[N]]></default>
+        <onCreateDefault/>
+      </column>
+      <column name="EM_SSCCCIN_VALDEPOSIT" primaryKey="false" required="false" type="CHAR" size="1" autoIncrement="false">
+        <default><![CDATA[N]]></default>
+        <onCreateDefault/>
+      </column>
+      <column name="EM_SSCCCIN_VALFINACC" primaryKey="false" required="false" type="CHAR" size="1" autoIncrement="false">
+        <default><![CDATA[N]]></default>
+        <onCreateDefault/>
+      </column>
+      <check name="EM_SSCCCIN_DIFFERENCE"><![CDATA[BLIND IN ('Y', 'N')]]></check>
+    </table>
+  </database>

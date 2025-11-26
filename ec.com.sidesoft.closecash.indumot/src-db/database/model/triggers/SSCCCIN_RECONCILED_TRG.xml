@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+  <database name="TRIGGER SSCCCIN_RECONCILED_TRG">
+    <trigger name="SSCCCIN_RECONCILED_TRG" table="FIN_FINACC_TRANSACTION" fires="after" insert="false" update="true" delete="false" foreach="row">
+      <body><![CDATA[	vPaymentMethod RECORD;
+
+
+BEGIN
+	
+	IF UPDATING THEN
+		IF (:NEW.em_sscccin_reference <> :OLD.em_sscccin_reference AND :NEW.em_sscccin_reference is not null) THEN
+		UPDATE fin_payment
+		SET referenceno = :NEW.em_sscccin_reference
+		WHERE fin_payment_id=:old.fin_payment_id AND referenceno<>:NEW.em_sscccin_reference;
+		END IF;
+	END IF;
+	
+END SSCCCIN_RECONCILED_TRG
+]]></body>
+    </trigger>
+  </database>

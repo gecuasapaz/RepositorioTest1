@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+  <vector>
+    <versionInfo version="3.0.34312"/>
+    <columnDataChange tablename="AD_MODEL_OBJECT" columnname="CLASSNAME" pkRow="134BDA969861427487FC8F8895C5D00F">
+      <oldValue><![CDATA[ec.com.sidesoft.custom.closecash.advanced.ad_Reports.SCCC_CashClose]]></oldValue>
+      <newValue><![CDATA[ec.com.sidesoft.closecash.report.print.ad_Reports.CashClose]]></newValue>
+    </columnDataChange>
+    <columnDataChange tablename="AD_MODEL_OBJECT_MAPPING" columnname="MAPPINGNAME" pkRow="41790EFBF2A54BC0A4E4802A88B4DE33">
+      <oldValue><![CDATA[/ec.com.sidesoft.custom.closecash.advanced.ad_Reports/SCCC_CashClose.pdf]]></oldValue>
+      <newValue><![CDATA[/ec.com.sidesoft.closecash.report.print.ad_Reports/CashClose.pdf]]></newValue>
+    </columnDataChange>
+  </vector>
