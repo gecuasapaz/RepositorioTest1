@@ -8,18 +8,18 @@ import java.util.Map;
 public class Components {
 
     //Metodo
-	public int multiplicar(int a, int b) {
+	public int metodocustom(int a, int b) {
         a = a + 1;
         return a * b;
     }
 
     //Metodo
-	public int dividir(int a, int b) {
+	public int metodocustom2(int a, int b) {
         a = a + 1;
         return a / b;
     }
 
-    public int calculoCompo(int a, int c){
+    public int metodocustom3(int a, int c){
         int sum = a+ c;
         return sum;
     }
