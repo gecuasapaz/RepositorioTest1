@@ -39,7 +39,7 @@ public class SscccinComponentProvider extends BaseComponentProvider {
   }
 
   public int calculoProvider(int a, int c){
-        int sum = a+ b;
+        int sum = a+ c;
         return sum; 
   }
 
