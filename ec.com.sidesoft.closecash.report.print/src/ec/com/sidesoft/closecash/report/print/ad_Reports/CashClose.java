@@ -49,7 +49,7 @@ public class CashClose extends HttpSecureAppServlet {
 
   public void init(ServletConfig config) {
     super.init(config);
-    boolHist = false; 
+    boolHist = false;  
   }
 
   public void doPost(HttpServletRequest request, HttpServletResponse response)
