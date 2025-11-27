@@ -14,7 +14,7 @@ public class Components2 {
     }
 
     public int calculoAux(int a, int c){
-        int sum = a+ b;
+        int sum = a+ c;
         return sum;
     }
 }
