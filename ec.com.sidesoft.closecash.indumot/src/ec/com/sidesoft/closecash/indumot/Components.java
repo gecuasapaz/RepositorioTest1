@@ -27,6 +27,7 @@ public class Components {
     public void SetAdminNow(){
         try{
              OBContext.setAdminMode();
+             OBContext.setAdminMode(true);
         }catch(Exception e){
 
         } finally {
