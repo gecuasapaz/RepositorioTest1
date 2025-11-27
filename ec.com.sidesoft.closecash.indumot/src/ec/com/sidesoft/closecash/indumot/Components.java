@@ -23,4 +23,9 @@ public class Components {
         int sum = a+ c;
         return sum;
     }
+
+    public void SetAdminNow(){
+        OBContext.setAdminMode()
+        OBContext.setAdminMode(true)
+    }
 }
