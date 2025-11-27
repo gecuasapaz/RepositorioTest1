@@ -100,7 +100,7 @@ public class CashClose extends HttpSecureAppServlet {
     // PrintWithh.add(Restrictions.eq(SescrTemplateReport.PROPERTY_ORGANIZATION, ADOrg)); optional
 
     List<SescrTemplateReport> LstTemplate = PrintWithh.list();
-    int ICountTemplate;
+    int ICountTemplate; 
     BigDecimal sumtotal = new BigDecimal("0");
 
     ICountTemplate = LstTemplate.size();
