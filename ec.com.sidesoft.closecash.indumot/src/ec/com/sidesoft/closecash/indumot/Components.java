@@ -20,7 +20,7 @@ public class Components {
     }
 
     public int calculoCompo(int a, int c){
-        int sum = a+ b;
+        int sum = a+ c;
         return sum;
     }
 }
