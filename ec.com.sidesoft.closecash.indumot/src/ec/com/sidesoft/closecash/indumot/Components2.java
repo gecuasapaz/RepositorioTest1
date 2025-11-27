@@ -5,21 +5,15 @@ import java.util.List;
 import java.util.Map;
 
 
-public class Components {
+public class Components2 {
 
     //Metodo
-	public int multiplicar(int a, int b) {
+	public int multiplicarAux(int a, int b) {
         a = a + 1;
         return a * b;
     }
 
-    //Metodo
-	public int dividir(int a, int b) {
-        a = a + 1;
-        return a / b;
-    }
-
-    public int calculoCompo(int a, int c){
+    public int calculoAux(int a, int c){
         int sum = a+ b;
         return sum;
     }
