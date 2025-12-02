@@ -230,7 +230,7 @@ public class profiling implements WebService{
 		 persona.put("Amount", Amount);
 		 persona.put("Identifier", ID);
 		 persona.put("City_store_group", City_store_group);
-		 persona.put("Province_store_group", Province_store_group);
+		 persona.put("Province_store_group", Province_store_group); 
 
 		    /*VALIDACION SOLO PARA CI DEL TERCERO*/
 		 // Fecha actual
