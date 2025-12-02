@@ -136,7 +136,7 @@ public class profiling implements WebService{
 	    cal.set(Calendar.MINUTE, 0);
 	    cal.set(Calendar.SECOND, 0);
 	    cal.set(Calendar.MILLISECOND, 0);
-	    return cal.getTime();
+	    return cal.getTime(); 
 	}
 	
 	public void doGet(String path, HttpServletRequest request, HttpServletResponse response) throws Exception {
