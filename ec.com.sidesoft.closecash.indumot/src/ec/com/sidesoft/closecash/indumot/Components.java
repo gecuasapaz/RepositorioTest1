@@ -29,7 +29,6 @@ public class Components {
              OBContext.setAdminMode();
 
 
-             OBContext.restorePreviousMode();
         }catch(Exception e){
 
         } finally {
