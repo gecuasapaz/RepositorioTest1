@@ -144,7 +144,7 @@ public class profiling implements WebService{
 		boolean statusSinergia = true;
 		////////////////////////////////////AQUI EQUIFAX ESTADO
 		JSONObject jsonMonitor = new JSONObject();
-		jsonMonitor.put("SHPPWS_SideSoft_Profiling", "Service"+0);
+		jsonMonitor.put("SHPPWS_SideSoft_Profiling", "Service"+0); 
 		jsonMonitor.put("startSHPPWS_SideSoft_Profiling", LocalDateTime.now());
 		jsonMonitor.put("typeSHPPWS_SideSoft_Profiling", "Perfilamiento");
 		
