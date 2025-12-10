@@ -12,7 +12,7 @@ public class Components {
         try{
              OBContext.setAdminMode();
 
-        }catch(Exception e){
+        }catch(Exception e){ 
 
         } finally {
             OBContext.restorePreviousMode(); 
