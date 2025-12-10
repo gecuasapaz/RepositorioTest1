@@ -7,27 +7,10 @@ import java.util.Map;
 
 public class Components {
 
-    //Metodo
-	public int metodocustom(int a, int b) {
-        a = a + 1;
-        return a * b;
-    }
-
-    //Metodo
-	public int metodocustom2(int a, int b) {
-        a = a + 1;
-        return a / b;
-    }
-
-    public int metodocustom3(int a, int c){
-        int sum = a+ c;
-        return sum;
-    }
-
+    //metodo test pruebas
     public void SetAdminNow(){
         try{
              OBContext.setAdminMode();
- 
 
         }catch(Exception e){
 
