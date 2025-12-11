@@ -8,7 +8,7 @@ import java.util.Map;
 public class Components {
 
     //metodo test pruebas
-    public void SetAdminNow(){
+    /*public void SetAdminNow(){
         try{
              OBContext.setAdminMode();
 
@@ -17,5 +17,11 @@ public class Components {
         } finally {
             OBContext.restorePreviousMode();   
         }
+    }*/
+
+    public int multiplicarAux(int a, int b) {
+        return a * b;
     }
+
+
 }
