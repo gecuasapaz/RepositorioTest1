@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 
-public class Components {
+public class Components { 
 
     //metodo test pruebas
     /*public void SetAdminNow(){

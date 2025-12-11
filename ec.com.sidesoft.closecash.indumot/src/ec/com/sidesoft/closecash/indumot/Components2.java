@@ -6,7 +6,7 @@ import java.util.Map;
 
 
 public class Components2 {
-
+ 
     //Metodo
 	public int multiplicarAux(int a, int b) {
         a = a + 1;
