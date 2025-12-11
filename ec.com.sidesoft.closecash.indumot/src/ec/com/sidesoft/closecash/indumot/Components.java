@@ -15,7 +15,7 @@ public class Components {
         }catch(Exception e){
 
         } finally {
-            OBContext.restorePreviousMode(); 
+            OBContext.restorePreviousMode();  
         }
     }
 }
