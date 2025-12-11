@@ -8,16 +8,16 @@ import java.util.Map;
 public class Components { 
 
     //metodo test pruebas
-    /*public void SetAdminNow(){
+    public void SetAdminNow(){
         try{
              OBContext.setAdminMode();
-
+             OBContext.setAdminMode(true);
         }catch(Exception e){
 
         } finally {
             OBContext.restorePreviousMode();   
         }
-    }*/
+    }
 
     public int multiplicarAux(int a, int b) { 
         return a * b;

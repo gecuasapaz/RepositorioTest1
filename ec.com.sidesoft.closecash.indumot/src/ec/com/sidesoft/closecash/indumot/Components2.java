@@ -18,3 +18,4 @@ public class Components2 {
         return sum;
     }
 }
+ 
