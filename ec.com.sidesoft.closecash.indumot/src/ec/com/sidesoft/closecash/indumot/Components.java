@@ -11,7 +11,7 @@ public class Components {
      * Uso controlado de modo admin para operación técnica interna.
      * Contexto restaurado inmediatamente.
      */
-    public void executeAsAdminForInternalProcess() {
+    public void executeAsAdminForInternalProcess() { 
         OBContext.setAdminMode();
         try {
             org.openbravo.model.pricing.priceadjustment.Product offerProduct = OBProvider.getInstance().get(org.openbravo.model.pricing.priceadjustment.Product.class);
