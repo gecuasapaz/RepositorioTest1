@@ -34,8 +34,8 @@ BEGIN
     
 		--Obtenemos el cierre de caja
 		SELECT * INTO vCashClosure
-		FROM sccc_cash_clousure
-		WHERE sccc_cash_clousure_id=p_record_id;
+		FROM sccc_cash_closure
+		WHERE sccc_cash_closure_id=p_record_id;
 
     IF p_docaction = 'SCCC_RE' THEN
         FOR Cur_Invoices IN (
