@@ -14,11 +14,12 @@ public class Components {
     public void executeAsAdminForInternalProcess() {  
          
         try {
-           OBContext.setAdminModee();    
+           OBContext.setAdminMode();    
         } catch(Exception e){
             throw new OBException("Error ejecutando lógica administrativa", e);
         }finally {
-            OBContext.restorePreviousMode();    
+            OBContext.restorePreviousMode();   
+            OBContext.setAdminMode();  
         }  
     } 
 
