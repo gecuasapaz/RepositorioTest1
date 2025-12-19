@@ -24,8 +24,7 @@ public class Components {
             OBDal.getInstance().save(offerProduct); 
         } finally {
             OBContext.restorePreviousMode(); 
-            OBContext.setAdminMode();   
-            OBContext.restorePreviousMode();
+            OBContext.setAdminMode();
         }
     }
 
