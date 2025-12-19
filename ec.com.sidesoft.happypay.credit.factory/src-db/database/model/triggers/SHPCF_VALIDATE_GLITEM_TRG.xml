@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+  <database name="TRIGGER SHPCF_VALIDATE_GLITEM_TRG">
+    <trigger name="SHPCF_VALIDATE_GLITEM_TRG" table="SHPCF_COLLECTION_QUOTAS" fires="before" insert="true" update="true" delete="false" foreach="row">
+      <body><![CDATA[
+v_Contar NUMBER;
+ 
+BEGIN
+   
+  IF AD_isTriggerEnabled()='N' THEN RETURN;
+  END IF;
+
+  IF (UPDATING OR INSERTING) THEN
+
+    IF (:NEW.additionalValue > 0 AND :NEW.m_product_id IS NULL) THEN
+		RAISE_APPLICATION_ERROR(-20000, '@Es necesario elegir un Producto@');
+	END IF;
+	
+	IF (:NEW.issueInvoice = 'N' AND :NEW.c_glitem_id IS NULL) THEN
+		RAISE_APPLICATION_ERROR(-20000, '@Es necesario elegir un Concepto Contable@');
+	END IF;
+
+  END IF;
+END SHPCF_VALIDATE_GLITEM_TRG
+]]></body>
+    </trigger>
+  </database>

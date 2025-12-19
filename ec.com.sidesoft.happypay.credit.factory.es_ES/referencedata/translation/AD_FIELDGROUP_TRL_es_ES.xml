@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<compiereTrl baseLanguage="en_US" language="es_ES" table="AD_FIELDGROUP" version="">
+  <row id="36CC1FF1BC164B98A3F88ABD8977FD8C" trl="Y">
+    <value column="Name" isTrl="Y" original="Advance_secction">Anticipo</value>
+  </row>
+  <row id="49DE084E3C6A4EFB806EB5634ED11F8A" trl="Y">
+    <value column="Name" isTrl="Y" original="AdditionalChargeAmount">Cobro Adicional por Monto</value>
+  </row>
+  <row id="92FE7ECCD3DC4F18A6D3AE8B99CFE876" trl="Y">
+    <value column="Name" isTrl="Y" original="Op Credit Data">Datos Crédito</value>
+  </row>
+  <row id="C8117989162541AA803F2DD04E474DD9" trl="Y">
+    <value column="Name" isTrl="Y" original="payment_secction">Cobro</value>
+  </row>
+</compiereTrl>

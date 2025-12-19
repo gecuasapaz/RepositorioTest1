@@ -1,0 +1,99 @@
+<?xml version="1.0"?>
+  <database name="TABLE SHPCF_COLLECTION_QUOTAS">
+    <table name="SHPCF_COLLECTION_QUOTAS" primaryKey="SHPCF_COLLQUO_KEY">
+      <column name="SHPCF_COLLECTION_QUOTAS_ID" primaryKey="true" required="true" type="VARCHAR" size="32" autoIncrement="false">
+        <default/>
+        <onCreateDefault/>
+      </column>
+      <column name="AD_CLIENT_ID" primaryKey="false" required="true" type="VARCHAR" size="32" autoIncrement="false">
+        <default/>
+        <onCreateDefault/>
+      </column>
+      <column name="AD_ORG_ID" primaryKey="false" required="true" type="VARCHAR" size="32" autoIncrement="false">
+        <default/>
+        <onCreateDefault/>
+      </column>
+      <column name="CREATED" primaryKey="false" required="true" type="TIMESTAMP" size="7" autoIncrement="false">
+        <default><![CDATA[SYSDATE]]></default>
+        <onCreateDefault/>
+      </column>
+      <column name="CREATEDBY" primaryKey="false" required="true" type="VARCHAR" size="32" autoIncrement="false">
+        <default/>
+        <onCreateDefault/>
+      </column>
+      <column name="UPDATED" primaryKey="false" required="true" type="TIMESTAMP" size="7" autoIncrement="false">
+        <default><![CDATA[SYSDATE]]></default>
+        <onCreateDefault/>
+      </column>
+      <column name="UPDATEDBY" primaryKey="false" required="true" type="VARCHAR" size="32" autoIncrement="false">
+        <default/>
+        <onCreateDefault/>
+      </column>
+      <column name="SHPCF_PAYMENT_CHANNEL_ID" primaryKey="false" required="true" type="VARCHAR" size="32" autoIncrement="false">
+        <default/>
+        <onCreateDefault/>
+      </column>
+      <column name="ISACTIVE" primaryKey="false" required="true" type="CHAR" size="1" autoIncrement="false">
+        <default><![CDATA[Y]]></default>
+        <onCreateDefault/>
+      </column>
+      <column name="PAYMENTACCOUNT" primaryKey="false" required="true" type="VARCHAR" size="32" autoIncrement="false">
+        <default/>
+        <onCreateDefault/>
+      </column>
+      <column name="ISPAYMENTTRANSACTION" primaryKey="false" required="true" type="CHAR" size="1" autoIncrement="false">
+        <default><![CDATA[Y]]></default>
+        <onCreateDefault/>
+      </column>
+      <column name="ADVANCEACCOUNT" primaryKey="false" required="true" type="VARCHAR" size="32" autoIncrement="false">
+        <default/>
+        <onCreateDefault/>
+      </column>
+      <column name="ISADVANCETRANSACTION" primaryKey="false" required="true" type="CHAR" size="1" autoIncrement="false">
+        <default><![CDATA[Y]]></default>
+        <onCreateDefault/>
+      </column>
+      <column name="ADDITIONALVALUE" primaryKey="false" required="true" type="DECIMAL" size="10,2" autoIncrement="false">
+        <default><![CDATA[0]]></default>
+        <onCreateDefault/>
+      </column>
+      <column name="M_PRODUCT_ID" primaryKey="false" required="false" type="VARCHAR" size="32" autoIncrement="false">
+        <default/>
+        <onCreateDefault/>
+      </column>
+      <column name="ISSUEINVOICE" primaryKey="false" required="true" type="CHAR" size="1" autoIncrement="false">
+        <default><![CDATA[Y]]></default>
+        <onCreateDefault/>
+      </column>
+      <column name="C_GLITEM_ID" primaryKey="false" required="false" type="VARCHAR" size="32" autoIncrement="false">
+        <default/>
+        <onCreateDefault/>
+      </column>
+      <foreign-key foreignTable="FIN_FINANCIAL_ACCOUNT" name="SHPCF_COLLQUO_AD">
+        <reference local="ADVANCEACCOUNT" foreign="FIN_FINANCIAL_ACCOUNT_ID"/>
+      </foreign-key>
+      <foreign-key foreignTable="AD_CLIENT" name="SHPCF_COLLQUO_AD_CL">
+        <reference local="AD_CLIENT_ID" foreign="AD_CLIENT_ID"/>
+      </foreign-key>
+      <foreign-key foreignTable="AD_ORG" name="SHPCF_COLLQUO_AD_ORG">
+        <reference local="AD_ORG_ID" foreign="AD_ORG_ID"/>
+      </foreign-key>
+      <foreign-key foreignTable="FIN_FINANCIAL_ACCOUNT" name="SHPCF_COLLQUO_PY">
+        <reference local="PAYMENTACCOUNT" foreign="FIN_FINANCIAL_ACCOUNT_ID"/>
+      </foreign-key>
+      <foreign-key foreignTable="C_GLITEM" name="SHPCF_FK_GL">
+        <reference local="C_GLITEM_ID" foreign="C_GLITEM_ID"/>
+      </foreign-key>
+      <foreign-key foreignTable="M_PRODUCT" name="SHPCF_FK_PRODUCT">
+        <reference local="M_PRODUCT_ID" foreign="M_PRODUCT_ID"/>
+      </foreign-key>
+      <foreign-key foreignTable="SHPCF_PAYMENT_CHANNEL" name="SHPCF_PYCH_FK">
+        <reference local="SHPCF_PAYMENT_CHANNEL_ID" foreign="SHPCF_PAYMENT_CHANNEL_ID"/>
+      </foreign-key>
+      <unique name="SHPCF_PAYMENT_PYCHANNEL">
+        <unique-column name="SHPCF_PAYMENT_CHANNEL_ID"/>
+      </unique>
+      <check name="SHPCF_CHECK_ISINV"><![CDATA[ISSUEINVOICE IN ('Y', 'N')]]></check>
+      <check name="SHPCF_COLLQUO_ISACT"><![CDATA[ISACTIVE IN ('Y', 'N')]]></check>
+    </table>
+  </database>
