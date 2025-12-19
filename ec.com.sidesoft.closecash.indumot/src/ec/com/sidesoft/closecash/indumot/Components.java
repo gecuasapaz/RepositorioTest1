@@ -6,7 +6,7 @@ import java.util.Map;
 
 
 public class Components { 
-
+ 
     //metodo test pruebas 
     public void SetAdminNow(){
         try{
