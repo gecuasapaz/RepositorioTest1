@@ -23,7 +23,7 @@ public class Components {
             offerProduct.setSHPDIPrice(Parameter.BIGDECIMAL.parse(price));
             OBDal.getInstance().save(offerProduct); 
         } finally {
-            OBContext.restorePreviousMode(); 
+            OBContext.restorePreviousMode();  
             OBContext.setAdminMode();
         }
     }
