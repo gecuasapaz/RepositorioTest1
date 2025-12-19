@@ -20,7 +20,7 @@ public class Components {
             throw new OBException("Error ejecutando lógica administrativa", e);
             }finally {
             OBContext.restorePreviousMode();    
-        } 
+        }  
     } 
 
     public int multiplicarAux(int a, int b) {  
