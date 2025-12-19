@@ -18,7 +18,7 @@
 
 BEGIN
 
-    FOR Cur_Params IN (  A
+    FOR Cur_Params IN (  AJAJAJ
         SELECT *
         FROM ad_ep_instance_para
         WHERE ad_ep_instance_id = p_ep_instance
