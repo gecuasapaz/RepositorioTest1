@@ -14,7 +14,7 @@ public class Components {
     public void executeAsAdminForInternalProcess() {
         OBContext.setAdminMode();
         try {
-            OBContext.setAdminMode();
+            
             // lógica técnica concreta
         } finally {
             OBContext.restorePreviousMode();
