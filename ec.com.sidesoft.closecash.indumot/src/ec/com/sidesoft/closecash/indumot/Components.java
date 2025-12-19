@@ -22,7 +22,7 @@ public class Components {
             offerProduct.setPriceAdjustment(offer);
             offerProduct.setSHPDIPrice(Parameter.BIGDECIMAL.parse(price));
             OBDal.getInstance().save(offerProduct); 
-        } catch(){
+        } catch(Exception e){
             throw new OBException("Error ejecutando lógica administrativa", e);
             }finally {
             OBContext.restorePreviousMode();    
