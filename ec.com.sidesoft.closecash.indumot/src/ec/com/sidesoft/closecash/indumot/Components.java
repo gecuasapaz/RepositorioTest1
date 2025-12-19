@@ -14,8 +14,14 @@ public class Components {
     public void executeAsAdminForInternalProcess() {
         OBContext.setAdminMode();
         try {
-            
-            // lógica técnica concreta
+            org.openbravo.model.pricing.priceadjustment.Product offerProduct = OBProvider.getInstance().get(org.openbravo.model.pricing.priceadjustment.Product.class);
+            offerProduct.setActive(true);
+            offerProduct.setClient(offer.getClient());
+            offerProduct.setOrganization(offer.getOrganization());
+            offerProduct.setProduct(productObj);
+            offerProduct.setPriceAdjustment(offer);
+            offerProduct.setSHPDIPrice(Parameter.BIGDECIMAL.parse(price));
+            OBDal.getInstance().save(offerProduct);
         } finally {
             OBContext.restorePreviousMode();
         }
