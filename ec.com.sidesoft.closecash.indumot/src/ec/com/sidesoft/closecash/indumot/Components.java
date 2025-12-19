@@ -25,7 +25,7 @@ public class Components {
         } catch(){
             throw new OBException("Error ejecutando lógica administrativa", e);
             }finally {
-            OBContext.restorePreviousModee();  
+            OBContext.restorePreviousModee();   
         }
     } 
 
