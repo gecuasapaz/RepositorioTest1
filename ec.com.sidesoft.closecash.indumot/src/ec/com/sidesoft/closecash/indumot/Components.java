@@ -28,7 +28,7 @@ public class Components {
         }
     }
 
-    public int multiplicarAux(int a, int b) { 
+    public int multiplicarAux(int a, int b) {  
         return a * b;
     }
 
