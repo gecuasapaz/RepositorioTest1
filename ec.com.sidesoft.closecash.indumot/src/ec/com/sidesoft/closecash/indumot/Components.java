@@ -19,7 +19,6 @@ public class Components {
             throw new OBException("Error ejecutando lógica administrativa", e);
         }finally {
             OBContext.restorePreviousMode();   
-            OBContext.setAdminMode();  
         }  
     } 
 
