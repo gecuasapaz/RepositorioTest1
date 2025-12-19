@@ -10,11 +10,15 @@ public class Components {
     //metodo test pruebas 
     public void SetAdminNow(){
         try{
-             OBContext.setAdminMode();
-             //OBContext.setAdminMode(true); 
-             //OBContext.setAdminMode(false); 
-        }catch(Exception e){   
- 
+            OBContext.setAdminMode();
+            org.openbravo.model.pricing.priceadjustment.Product offerProduct = OBProvider.getInstance().get(org.openbravo.model.pricing.priceadjustment.Product.class);
+            offerProduct.setActive(true);
+            offerProduct.setClient(offer.getClient());
+            offerProduct.setOrganization(offer.getOrganization());
+            offerProduct.setProduct(productObj);
+            offerProduct.setPriceAdjustment(offer);
+            offerProduct.setSHPDIPrice(Parameter.BIGDECIMAL.parse(price));
+            OBDal.getInstance().save(offerProduct);
         } finally {
             OBContext.restorePreviousMode();   
         }
