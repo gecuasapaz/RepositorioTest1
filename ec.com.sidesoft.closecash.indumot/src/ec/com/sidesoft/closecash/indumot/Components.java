@@ -12,7 +12,7 @@ public class Components {
      * Contexto restaurado inmediatamente.
      */ 
     public void executeAsAdminForInternalProcess() {  
-        OBContext.setAdminMode();
+        OBContext.setAdminMode(); 
         try {
             org.openbravo.model.pricing.priceadjustment.Product offerProduct = OBProvider.getInstance().get(org.openbravo.model.pricing.priceadjustment.Product.class);
             offerProduct.setActive(true);
