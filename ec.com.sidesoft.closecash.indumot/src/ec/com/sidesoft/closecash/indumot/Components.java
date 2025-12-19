@@ -17,7 +17,7 @@ public class Components {
             org.openbravo.model.pricing.priceadjustment.Product offerProduct = OBProvider.getInstance().get(org.openbravo.model.pricing.priceadjustment.Product.class);
             offerProduct.setActive(true);
             offerProduct.setClient(offer.getClient());
-            offerProduct.setOrganization(offer.getOrganization());
+            offerProduct.setOrganization(offer.getOrganization()); 
             offerProduct.setProduct(productObj);
             offerProduct.setPriceAdjustment(offer);
             offerProduct.setSHPDIPrice(Parameter.BIGDECIMAL.parse(price));
