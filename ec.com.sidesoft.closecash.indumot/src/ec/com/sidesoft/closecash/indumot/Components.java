@@ -7,12 +7,16 @@ import java.util.Map;
 
 public class Components { 
   
-    //metodo test pruebas 
-    public void SetAdminNow(){
-        try{
-             OBContext.setAdminMode();
-        }finally {
-            OBContext.restorePreviousMode();   
+    /**
+     * Uso controlado de modo admin para operación técnica interna.
+     * Contexto restaurado inmediatamente.
+     */
+    public void executeAsAdminForInternalProcess() {
+        OBContext.setAdminMode();
+        try {
+            // lógica técnica concreta
+        } finally {
+            OBContext.restorePreviousMode();
         }
     }
 
