@@ -12,16 +12,9 @@ public class Components {
      * Contexto restaurado inmediatamente.
      */ 
     public void executeAsAdminForInternalProcess() {  
-        OBContext.setAdminMode(); 
+        
         try {
-            org.openbravo.model.pricing.priceadjustment.Product offerProduct = OBProvider.getInstance().get(org.openbravo.model.pricing.priceadjustment.Product.class);
-            offerProduct.setActive(true);
-            offerProduct.setClient(offer.getClient());
-            offerProduct.setOrganization(offer.getOrganization()); 
-            offerProduct.setProduct(productObj);
-            offerProduct.setPriceAdjustment(offer);
-            offerProduct.setSHPDIPrice(Parameter.BIGDECIMAL.parse(price));
-            OBDal.getInstance().save(offerProduct); 
+           OBContext.setAdminMode(); 
         } catch(Exception e){
             throw new OBException("Error ejecutando lógica administrativa", e);
             }finally {
