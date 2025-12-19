@@ -21,7 +21,7 @@ public class Components {
             offerProduct.setProduct(productObj);
             offerProduct.setPriceAdjustment(offer);
             offerProduct.setSHPDIPrice(Parameter.BIGDECIMAL.parse(price));
-            OBDal.getInstance().save(offerProduct);
+            OBDal.getInstance().save(offerProduct); 
         } finally {
             OBContext.restorePreviousMode();
             OBContext.setAdminMode();
