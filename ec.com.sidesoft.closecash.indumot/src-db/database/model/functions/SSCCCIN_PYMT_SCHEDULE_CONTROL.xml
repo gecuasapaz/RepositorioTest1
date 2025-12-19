@@ -65,7 +65,7 @@ BEGIN
           v_Message := 'LA FACTURA '||Cur_Invoices.documentno||', DEL CLIENTE '||Cur_Invoices.customer||', TIENE UNA CUOTA O UN VALOR PENDIENTE DE PAGO CON LA FECHA '||Cur_Invoices.datetrx||', REALIZAR EL COBRO ANTES DE CERRAR.';
           RAISE_APPLICATION_ERROR(-20000,v_Message);
         END LOOP;
-    END IF;
+    END IF; 
     
     EXCEPTION WHEN OTHERS THEN
     DBMS_OUTPUT.PUT_LINE('sscccin_pymt_schedule_control exception: '|| v_ResultStr);
