@@ -21,7 +21,7 @@ BEGIN
     FOR Cur_Params IN (
         SELECT ***
         FROM ad_ep_instance_para
-        WHERE ad_ep_instance_id = p_ep_instance
+        WHERE ad_ep_instance_id = p_ep_instance 
     ) LOOP
         IF cur_params.parametername = 'DocAction' THEN
             p_docaction := Cur_Params.p_string;
