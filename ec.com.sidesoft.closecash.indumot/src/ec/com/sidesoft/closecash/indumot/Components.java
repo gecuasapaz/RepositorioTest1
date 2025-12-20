@@ -12,7 +12,7 @@ public class Components {
      * Contexto restaurado inmediatamente. 
      */  
     public void executeAsAdminForInternalProcess() {  
-         
+          
         try { 
            OBContext.setAdminModee();   
            //OBContext.setAdminMode();    
