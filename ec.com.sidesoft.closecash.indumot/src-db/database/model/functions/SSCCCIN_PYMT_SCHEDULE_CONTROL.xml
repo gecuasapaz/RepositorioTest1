@@ -71,6 +71,6 @@ BEGIN
     DBMS_OUTPUT.PUT_LINE('sscccin_pymt_schedule_control exception: '|| v_ResultStr);
     RAISE;
 END SSCCCIN_PYMT_SCHEDULE_CONTROL
-]]></body>
+]]></body> 
     </function>
   </database>
