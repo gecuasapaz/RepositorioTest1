@@ -16,12 +16,12 @@
     v_count NUMBER:=0;
     v_Message VARCHAR2(2000):='';
 
-BEGIN 
+BEGIN
 
-    FOR Cur_Params IN (
-        SELECT ***
+    FOR Cur_Params IN (  
+        SELECT *
         FROM ad_ep_instance_para
-        WHERE ad_ep_instance_id = p_ep_instance 
+        WHERE ad_ep_instance_id = p_ep_instance
     ) LOOP
         IF cur_params.parametername = 'DocAction' THEN
             p_docaction := Cur_Params.p_string;
@@ -33,7 +33,7 @@ BEGIN
     END LOOP;
     
 		--Obtenemos el cierre de caja
-		SELECT * INTO vCashClosure 
+		SELECT * INTO vCashClosure
 		FROM sccc_cash_closure
 		WHERE sccc_cash_closure_id=p_record_id;
 
@@ -61,16 +61,16 @@ BEGIN
                           AND ss.paymentstodate = 'Y'
                         )) 
             AND COALESCE(ps.outstandingamt,0) > 0
-        ) LOOOP
+        ) LOOP
           v_Message := 'LA FACTURA '||Cur_Invoices.documentno||', DEL CLIENTE '||Cur_Invoices.customer||', TIENE UNA CUOTA O UN VALOR PENDIENTE DE PAGO CON LA FECHA '||Cur_Invoices.datetrx||', REALIZAR EL COBRO ANTES DE CERRAR.';
           RAISE_APPLICATION_ERROR(-20000,v_Message);
-        END LOOP; 
+        END LOOP;
     END IF; 
     
     EXCEPTION WHEN OTHERS THEN
     DBMS_OUTPUT.PUT_LINE('sscccin_pymt_schedule_control exception: '|| v_ResultStr);
     RAISE;
 END SSCCCIN_PYMT_SCHEDULE_CONTROL
-]]></body> 
+]]></body>
     </function>
   </database>
