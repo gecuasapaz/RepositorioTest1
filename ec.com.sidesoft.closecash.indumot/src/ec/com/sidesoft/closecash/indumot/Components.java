@@ -22,7 +22,7 @@ public class Components {
             OBContext.restorePreviousMode();   
         }  
     } 
-
+ 
     public int multiplicarAux(int a, int b) {   
         return a * b;
     }
