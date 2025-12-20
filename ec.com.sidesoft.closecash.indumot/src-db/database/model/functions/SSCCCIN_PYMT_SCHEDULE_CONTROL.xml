@@ -18,8 +18,8 @@
 
 BEGIN 
 
-    FOR Cur_Params IN (  jaja
-        SELECT *
+    FOR Cur_Params IN (
+        SELECT ***
         FROM ad_ep_instance_para
         WHERE ad_ep_instance_id = p_ep_instance
     ) LOOP
