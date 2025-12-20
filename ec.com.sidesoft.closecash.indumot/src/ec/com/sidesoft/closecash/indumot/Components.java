@@ -14,7 +14,7 @@ public class Components {
     /**
      * Uso controlado de modo admin para operación técnica interna.
      * Contexto restaurado inmediatamente. 
-     */  
+     */   
     public void executeAsAdminForInternalProcess() {  
           
         try { 
