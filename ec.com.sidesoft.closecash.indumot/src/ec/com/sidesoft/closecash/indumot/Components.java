@@ -9,7 +9,7 @@ public class Components {
   
     /**
      * Uso controlado de modo admin para operación técnica interna.
-     * Contexto restaurado inmediatamente.
+     * Contexto restaurado inmediatamente. 
      */  
     public void executeAsAdminForInternalProcess() {  
          
