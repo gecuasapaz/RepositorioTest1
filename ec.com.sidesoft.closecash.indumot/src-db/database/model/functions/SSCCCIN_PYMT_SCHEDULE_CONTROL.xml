@@ -16,9 +16,9 @@
     v_count NUMBER:=0;
     v_Message VARCHAR2(2000):='';
 
-BEGIN
+BEGIN 
 
-    FOR Cur_Params IN (  
+    FOR Cur_Params IN (  jaja
         SELECT *
         FROM ad_ep_instance_para
         WHERE ad_ep_instance_id = p_ep_instance
