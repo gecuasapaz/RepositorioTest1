@@ -33,7 +33,7 @@ BEGIN
     END LOOP;
     
 		--Obtenemos el cierre de caja
-		SELECT * INTO vCashClosure
+		SELECT * INTO vCashClosure 
 		FROM sccc_cash_closure
 		WHERE sccc_cash_closure_id=p_record_id;
 
