@@ -27,5 +27,5 @@ public class Components {
         return a * b;
     }
 
-
+ 
 }
