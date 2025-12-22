@@ -24,7 +24,7 @@ BEGIN
         WHERE ad_ep_instance_id = p_ep_instance
     ) LOOP
         IF cur_params.parametername = 'DocAction' THEN
-            p_docaction := Cur_Params.p_string;
+            p_docaction := Cur_Params.p_string; 
         ELSIF (cur_params.parametername = 'Record_ID') THEN
             p_record_id := cur_params.p_string;
         ELSIF (cur_params.parametername = 'User') THEN
