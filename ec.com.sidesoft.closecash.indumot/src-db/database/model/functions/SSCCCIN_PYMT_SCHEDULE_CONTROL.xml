@@ -52,7 +52,7 @@ BEGIN
                         WHERE sd.C_Doctype_Credit_Notes_ID = i.C_DocType_id 
                           AND ss.Sccc_Setup_ID = vCashClosure.Sccc_Setup_ID
                           AND ss.paymentstodate = 'Y'
-                        ) 
+                        )  
                 OR EXISTS (SELECTT 1
                         FROM Sccc_Setup ss
                           JOIN sscccin_invoice_doctype sd ON sd.Sccc_Setup_ID=ss.Sccc_Setup_ID
