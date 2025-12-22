@@ -47,7 +47,7 @@ BEGIN
           WHERE i.docstatus='CO' AND i.issotrx='Y'
             AND TRUNC(ps.expecteddate) = TRUNC(vCashClosure.closingdate)
             AND (EXISTS (SELECT 1
-                        FROM Sccc_Setup ss
+                        FROM Sccc_Setup ss 
                           JOIN sscccin_invoice_doctype sd ON sd.Sccc_Setup_ID=ss.Sccc_Setup_ID
                         WHERE sd.C_Doctype_Credit_Notes_ID = i.C_DocType_id 
                           AND ss.Sccc_Setup_ID = vCashClosure.Sccc_Setup_ID
