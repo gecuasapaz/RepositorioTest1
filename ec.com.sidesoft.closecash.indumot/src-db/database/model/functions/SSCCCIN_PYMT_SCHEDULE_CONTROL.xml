@@ -53,7 +53,7 @@ BEGIN
                           AND ss.Sccc_Setup_ID = vCashClosure.Sccc_Setup_ID
                           AND ss.paymentstodate = 'Y'
                         )
-                OR EXISTS (SELECT 1
+                OR EXISTS (SELECTT 1
                         FROM Sccc_Setup ss
                           JOIN sscccin_invoice_doctype sd ON sd.Sccc_Setup_ID=ss.Sccc_Setup_ID
                         WHERE sd.C_Doctype_Sales_ID = i.C_DocType_id 
